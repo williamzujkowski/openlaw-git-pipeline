@@ -2,46 +2,45 @@ import { ok, err } from '@civic-source/types';
 import type { Result, IXmlToMarkdownAdapter } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
 import { createLogger } from './logger.js';
-import { parseUslmXml, extractText } from './parser.js';
+import { parseUslmXml } from './parser.js';
+import { extractTextFromNodes, findElements } from './xml-utils.js';
 import { generateMarkdownForSection } from './markdown-generator.js';
 import type { MarkdownFile } from './markdown-generator.js';
 
 const log = createLogger('transformer');
 
-/** Extract a number string from a USLM identifier attribute */
-function extractNumFromId(node: Record<string, unknown>, fallback: string): string {
-  const id = node['@_identifier'] as string | undefined;
+/** Extract a number string from a USLM identifier attribute or num child */
+function extractNumFromId(
+  children: unknown[],
+  attrs: Record<string, string>,
+  fallback: string
+): string {
+  const id = attrs['@_identifier'];
   if (id) {
     const match = /(\d+[\w-]*)$/.exec(id);
     if (match) return match[1];
   }
-  const numEl = node[USLM_ELEMENTS.num] as unknown;
-  const text = extractText(numEl).replace(/[^0-9a-zA-Z-]/g, '');
-  return text || fallback;
-}
-
-/** Collect all sections from within a chapter node */
-function collectSections(node: Record<string, unknown>): Record<string, unknown>[] {
-  const sections: Record<string, unknown>[] = [];
-  const sectionData = node[USLM_ELEMENTS.section];
-  if (!sectionData) return sections;
-
-  const items = Array.isArray(sectionData) ? sectionData : [sectionData];
-  for (const item of items) {
-    if (typeof item === 'object' && item !== null) {
-      sections.push(item as Record<string, unknown>);
-    }
+  const nums = findElements(children, USLM_ELEMENTS.num);
+  if (nums.length > 0) {
+    const text = extractTextFromNodes(nums[0].children).replace(/[^0-9a-zA-Z-]/g, '');
+    return text || fallback;
   }
-  return sections;
+  return fallback;
 }
 
-/** Walk the parsed tree and collect chapter→section mappings */
-function walkTitle(
-  titleNode: Record<string, unknown>
-): Array<{ chapterNum: string; section: Record<string, unknown>; sectionNum: string }> {
-  const results: Array<{ chapterNum: string; section: Record<string, unknown>; sectionNum: string }> = [];
+/** Collect all section elements from a parent node's children */
+function collectSections(
+  children: unknown[]
+): Array<{ children: unknown[]; attrs: Record<string, string> }> {
+  return findElements(children, USLM_ELEMENTS.section);
+}
 
-  // Chapters may be nested under subtitle, subchapter, part, etc.
+/** Walk the parsed tree and collect chapter->section mappings */
+function walkTitle(
+  titleChildren: unknown[]
+): Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> {
+  const results: Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> = [];
+
   const containers = [
     USLM_ELEMENTS.chapter,
     USLM_ELEMENTS.subchapter,
@@ -50,39 +49,30 @@ function walkTitle(
   ];
 
   // Direct sections under title (no chapter)
-  for (const section of collectSections(titleNode)) {
-    const sectionNum = extractNumFromId(section, '0');
-    results.push({ chapterNum: '0', section, sectionNum });
+  for (const section of collectSections(titleChildren)) {
+    const sectionNum = extractNumFromId(section.children, section.attrs, '0');
+    results.push({ chapterNum: '0', sectionChildren: section.children, sectionNum });
   }
 
   // Walk containers for chapters
   for (const containerName of containers) {
-    const containerData = titleNode[containerName];
-    if (!containerData) continue;
-
-    const items = Array.isArray(containerData) ? containerData : [containerData];
-    for (const item of items) {
-      if (typeof item !== 'object' || item === null) continue;
-      const container = item as Record<string, unknown>;
-      const chapterNum = extractNumFromId(container, '0');
+    const containerItems = findElements(titleChildren, containerName);
+    for (const container of containerItems) {
+      const chapterNum = extractNumFromId(container.children, container.attrs, '0');
 
       // Sections directly in container
-      for (const section of collectSections(container)) {
-        const sectionNum = extractNumFromId(section, '0');
-        results.push({ chapterNum, section, sectionNum });
+      for (const section of collectSections(container.children)) {
+        const sectionNum = extractNumFromId(section.children, section.attrs, '0');
+        results.push({ chapterNum, sectionChildren: section.children, sectionNum });
       }
 
       // Recurse one level for nested subchapter/part
       for (const innerName of containers) {
-        const innerData = container[innerName];
-        if (!innerData) continue;
-        const innerItems = Array.isArray(innerData) ? innerData : [innerData];
+        const innerItems = findElements(container.children, innerName);
         for (const inner of innerItems) {
-          if (typeof inner !== 'object' || inner === null) continue;
-          const innerNode = inner as Record<string, unknown>;
-          for (const section of collectSections(innerNode)) {
-            const sectionNum = extractNumFromId(section, '0');
-            results.push({ chapterNum, section, sectionNum });
+          for (const section of collectSections(inner.children)) {
+            const sectionNum = extractNumFromId(section.children, section.attrs, '0');
+            results.push({ chapterNum, sectionChildren: section.children, sectionNum });
           }
         }
       }
@@ -119,24 +109,25 @@ export class XmlToMarkdownAdapter implements IXmlToMarkdownAdapter {
     const { root, titleNumber } = parseResult.value;
     const titleNum = titleNumber ?? '0';
 
-    // Find the title node
-    const lawDoc = root[USLM_ELEMENTS.lawDoc] as Record<string, unknown> | undefined;
-    const titleNode = (lawDoc?.[USLM_ELEMENTS.title] ?? root[USLM_ELEMENTS.title]) as
-      Record<string, unknown> | undefined;
+    // Find the title node — may be inside lawDoc or at root
+    const lawDocs = findElements(root, USLM_ELEMENTS.lawDoc);
+    const titleSource = lawDocs.length > 0 ? lawDocs[0].children : root;
+    const titles = findElements(titleSource, USLM_ELEMENTS.title);
 
-    if (!titleNode) {
+    if (titles.length === 0) {
       return err(new Error('No title element found in document'));
     }
 
-    const entries = walkTitle(titleNode);
+    const titleChildren = titles[0].children;
+    const entries = walkTitle(titleChildren);
     const files: MarkdownFile[] = [];
     let processed = 0;
     let skipped = 0;
 
-    for (const { chapterNum, section, sectionNum } of entries) {
+    for (const { chapterNum, sectionChildren, sectionNum } of entries) {
       try {
         const file = generateMarkdownForSection(
-          section,
+          sectionChildren,
           titleNum,
           chapterNum,
           sectionNum,

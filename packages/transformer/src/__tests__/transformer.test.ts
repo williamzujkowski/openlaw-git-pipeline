@@ -70,17 +70,18 @@ const EMPTY_XML = `<lawDoc><title identifier="/us/usc/t1"><num>Title 1</num></ti
 // --- Tests ---
 
 describe('parseUslmXml', () => {
-  it('parses minimal USLM XML into a structured object', () => {
+  it('parses minimal USLM XML into a structured array', () => {
     const result = parseUslmXml(MINIMAL_SECTION_XML);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.root).toBeDefined();
+    expect(Array.isArray(result.value.root)).toBe(true);
     expect(result.value.titleNumber).toBe('26');
   });
 
   it('returns error for completely invalid XML', () => {
     const result = parseUslmXml('<<<not xml at all>>>');
-    // fast-xml-parser is lenient; it may parse garbage. But missing root elements → error.
+    // fast-xml-parser is lenient; it may parse garbage. But missing root elements -> error.
     expect(result.ok).toBe(false);
   });
 
@@ -117,6 +118,11 @@ describe('extractText', () => {
   it('handles numeric values', () => {
     expect(extractText(42)).toBe('42');
     expect(extractText({ '#text': 101 })).toBe('101');
+  });
+
+  it('handles preserveOrder arrays', () => {
+    const nodes = [{ '#text': 'hello' }, { '#text': 'world' }];
+    expect(extractText(nodes)).toBe('hello world');
   });
 });
 
@@ -216,20 +222,25 @@ describe('nestingDepthFor', () => {
 });
 
 describe('generateSectionBody', () => {
-  it('generates heading and nested list items from a section node', () => {
-    const sectionNode = {
-      num: '101',
-      heading: 'Test heading',
-      subsection: {
-        num: '(a)',
-        content: 'Top level text',
-        paragraph: {
-          num: '(1)',
-          content: 'Nested text',
-        },
+  it('generates heading and nested list items from preserveOrder children', () => {
+    // preserveOrder format: array of single-key objects
+    const sectionChildren: unknown[] = [
+      { num: [{ '#text': '101' }] },
+      { heading: [{ '#text': 'Test heading' }] },
+      {
+        subsection: [
+          { num: [{ '#text': '(a)' }] },
+          { content: [{ '#text': 'Top level text' }] },
+          {
+            paragraph: [
+              { num: [{ '#text': '(1)' }] },
+              { content: [{ '#text': 'Nested text' }] },
+            ],
+          },
+        ],
       },
-    };
-    const body = generateSectionBody(sectionNode);
+    ];
+    const body = generateSectionBody(sectionChildren);
     expect(body).toContain('# 101 Test heading');
     expect(body).toContain('(a) Top level text');
     expect(body).toContain('  (1) Nested text');
@@ -238,11 +249,11 @@ describe('generateSectionBody', () => {
 
 describe('generateMarkdownForSection', () => {
   it('produces a complete markdown file with frontmatter and body', () => {
-    const sectionNode = {
-      num: '101',
-      heading: 'Certain death benefits',
-    };
-    const file = generateMarkdownForSection(sectionNode, '26', '1', '101', 'PL 119-73');
+    const sectionChildren: unknown[] = [
+      { num: [{ '#text': '101' }] },
+      { heading: [{ '#text': 'Certain death benefits' }] },
+    ];
+    const file = generateMarkdownForSection(sectionChildren, '26', '1', '101', 'PL 119-73');
     expect(file.path).toBe('statutes/title-26/chapter-1/section-101.md');
     expect(file.content).toContain('---');
     expect(file.content).toContain('usc_title: 26');
@@ -297,5 +308,32 @@ describe('XmlToMarkdownAdapter', () => {
     expect(result.value).toMatch(/^ {4}\(A\)/m);
     // (i) at depth 3 (clause) — 6 spaces
     expect(result.value).toMatch(/^ {6}\(i\)/m);
+  });
+
+  it('preserves inline element text in mixed content (cross-references)', () => {
+    const xml = `
+<lawDoc>
+  <title identifier="/us/usc/t18">
+    <num>Title 18</num>
+    <chapter identifier="/us/usc/t18/ch1">
+      <num>Chapter 1</num>
+      <section identifier="/us/usc/t18/s1">
+        <num>1</num>
+        <heading>Offenses</heading>
+        <subsection>
+          <num>(a)</num>
+          <content>Any person who commits an offense described in <ref href="usc:18:111">section 111</ref> of this title shall be fined.</content>
+        </subsection>
+      </section>
+    </chapter>
+  </title>
+</lawDoc>`;
+    const adapter = new XmlToMarkdownAdapter();
+    const result = adapter.transform(xml);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // With preserveOrder, inline ref text is preserved in position
+    expect(result.value).toContain('section 111');
+    expect(result.value).toMatch(/described in.*section 111.*of this title/);
   });
 });

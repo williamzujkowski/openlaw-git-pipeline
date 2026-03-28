@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { USLM_ELEMENTS, INDENT_PER_LEVEL, MAX_NESTING_DEPTH } from './constants.js';
-import { extractText } from './parser.js';
+import { extractTextFromNodes, findElements } from './xml-utils.js';
 
 /** Zod schema for YAML frontmatter validation */
 export const FrontmatterSchema = z.object({
@@ -66,30 +66,36 @@ export function nestingDepthFor(elementName: string): number {
   return depthMap[elementName] ?? 0;
 }
 
-/** Extract marker text like "(a)" from a num element */
-function extractMarker(node: Record<string, unknown>): string {
-  const num = node[USLM_ELEMENTS.num] as unknown;
-  return extractText(num).trim();
+/** Extract marker text like "(a)" from a num element within node children */
+function extractMarker(children: unknown[]): string {
+  const nums = findElements(children, USLM_ELEMENTS.num);
+  if (nums.length === 0) return '';
+  return extractTextFromNodes(nums[0].children).trim();
 }
 
-/** Extract heading text from a node */
-function extractHeading(node: Record<string, unknown>): string {
-  const heading = node[USLM_ELEMENTS.heading] as unknown;
-  return extractText(heading).trim();
+/** Extract heading text from node children */
+function extractHeading(children: unknown[]): string {
+  const headings = findElements(children, USLM_ELEMENTS.heading);
+  if (headings.length === 0) return '';
+  return extractTextFromNodes(headings[0].children).trim();
 }
 
-/** Extract content/chapeau text from a node */
-function extractContent(node: Record<string, unknown>): string {
-  const content = node[USLM_ELEMENTS.content] as unknown;
-  const chapeau = node[USLM_ELEMENTS.chapeau] as unknown;
-  const contentText = extractText(content).trim();
-  const chapeauText = extractText(chapeau).trim();
-  return chapeauText || contentText;
+/** Extract content/chapeau text from node children */
+function extractContent(children: unknown[]): string {
+  const chapeaux = findElements(children, USLM_ELEMENTS.chapeau);
+  if (chapeaux.length > 0) {
+    return extractTextFromNodes(chapeaux[0].children).trim();
+  }
+  const contents = findElements(children, USLM_ELEMENTS.content);
+  if (contents.length > 0) {
+    return extractTextFromNodes(contents[0].children).trim();
+  }
+  return '';
 }
 
 /** Recursively walk nested list elements and generate markdown lines */
 function walkListElements(
-  node: Record<string, unknown>,
+  children: unknown[],
   depth: number,
   lines: string[]
 ): void {
@@ -104,52 +110,44 @@ function walkListElements(
   ];
 
   for (const elemName of listElements) {
-    const children = node[elemName];
-    if (!children) continue;
-
-    const items = Array.isArray(children) ? children : [children];
+    const items = findElements(children, elemName);
     for (const item of items) {
-      if (typeof item !== 'object' || item === null) continue;
-      const child = item as Record<string, unknown>;
-      const marker = extractMarker(child);
-      const text = extractContent(child);
+      const marker = extractMarker(item.children);
+      const text = extractContent(item.children);
       const childDepth = nestingDepthFor(elemName);
 
       if (marker || text) {
         lines.push(formatListItem(marker, text, childDepth));
       }
-      walkListElements(child, depth + 1, lines);
+      walkListElements(item.children, depth + 1, lines);
     }
   }
 }
 
-/** Generate markdown body for a single section node */
-export function generateSectionBody(sectionNode: Record<string, unknown>): string {
+/** Generate markdown body for a single section node (preserveOrder children) */
+export function generateSectionBody(sectionChildren: unknown[]): string {
   const lines: string[] = [];
 
   // Section heading
-  const heading = extractHeading(sectionNode);
-  const sectionNum = extractMarker(sectionNode);
+  const heading = extractHeading(sectionChildren);
+  const sectionNum = extractMarker(sectionChildren);
   if (heading) {
     lines.push(`# ${sectionNum ? sectionNum + ' ' : ''}${heading}`);
     lines.push('');
   }
 
   // Walk nested list elements
-  walkListElements(sectionNode, 0, lines);
+  walkListElements(sectionChildren, 0, lines);
 
   // Notes
-  const notes = sectionNode[USLM_ELEMENTS.note];
-  if (notes) {
+  const notes = findElements(sectionChildren, USLM_ELEMENTS.note);
+  if (notes.length > 0) {
     lines.push('');
     lines.push('## Notes');
     lines.push('');
-    const noteItems = Array.isArray(notes) ? notes : [notes];
-    for (const note of noteItems) {
-      const text = typeof note === 'object' && note !== null
-        ? extractText(note as Record<string, unknown>)
-        : extractText(note);
-      if (text) lines.push(text.trim());
+    for (const note of notes) {
+      const text = extractTextFromNodes(note.children).trim();
+      if (text) lines.push(text);
     }
   }
 
@@ -158,16 +156,17 @@ export function generateSectionBody(sectionNode: Record<string, unknown>): strin
 
 /**
  * Generate a complete markdown file for a section.
+ * sectionChildren is the children array of the section element in preserveOrder format.
  * Returns the MarkdownFile with path and content.
  */
 export function generateMarkdownForSection(
-  sectionNode: Record<string, unknown>,
+  sectionChildren: unknown[],
   titleNum: string,
   chapterNum: string,
   sectionNum: string,
   currentThrough: string
 ): MarkdownFile {
-  const heading = extractHeading(sectionNode);
+  const heading = extractHeading(sectionChildren);
   const now = new Date().toLocaleString('sv-SE', { timeZone: 'America/New_York' }).replace(' ', 'T') + '-04:00';
 
   const uscTitle = parseInt(titleNum, 10) || 0;
@@ -183,7 +182,7 @@ export function generateMarkdownForSection(
     generated_at: now,
   });
 
-  const body = generateSectionBody(sectionNode);
+  const body = generateSectionBody(sectionChildren);
   const content = generateFrontmatter(frontmatter) + '\n' + body + '\n';
   const path = buildSectionPath(titleNum, chapterNum, sectionNum);
 

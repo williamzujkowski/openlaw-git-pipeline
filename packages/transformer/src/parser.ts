@@ -3,13 +3,14 @@ import { ok, err } from '@civic-source/types';
 import type { Result } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
 import { createLogger } from './logger.js';
+import { extractTextFromNodes, findElements, getAttributes } from './xml-utils.js';
 
 const log = createLogger('parser');
 
-/** Parsed USLM document structure */
+/** Parsed USLM document structure (preserveOrder format) */
 export interface ParsedDocument {
-  /** Root parsed object from fast-xml-parser */
-  root: Record<string, unknown>;
+  /** Root parsed array from fast-xml-parser (preserveOrder: true) */
+  root: unknown[];
   /** Title number extracted from the document */
   titleNumber: string | undefined;
 }
@@ -25,8 +26,7 @@ function createUslmParser(): XMLParser {
     removeNSPrefix: true,
     parseTagValue: false,
     trimValues: true,
-    commentPropName: false,
-    cdataPropName: false,
+    preserveOrder: true,
     processEntities: {
       maxEntityCount: MAX_ENTITY_COUNT,
     },
@@ -35,12 +35,13 @@ function createUslmParser(): XMLParser {
 }
 
 /**
- * Extract text from a node that may be a string or an object with #text.
- * Returns empty string if not found.
+ * Extract text from a preserveOrder node array or a plain value.
+ * For backward compatibility with markdown-generator and transformer.
  */
 export function extractText(node: unknown): string {
   if (typeof node === 'string') return node;
   if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return extractTextFromNodes(node);
   if (node !== null && typeof node === 'object') {
     const obj = node as Record<string, unknown>;
     if ('#text' in obj && typeof obj['#text'] === 'string') return obj['#text'];
@@ -50,28 +51,32 @@ export function extractText(node: unknown): string {
 }
 
 /**
- * Find the title number from a parsed USLM document.
+ * Find the title number from a parsed USLM document (preserveOrder format).
  * Looks for the identifier attribute on the title element.
  */
-function findTitleNumber(root: Record<string, unknown>): string | undefined {
-  const lawDoc = root[USLM_ELEMENTS.lawDoc] as Record<string, unknown> | undefined;
-  if (!lawDoc) return undefined;
+function findTitleNumber(root: unknown[]): string | undefined {
+  const lawDocs = findElements(root, USLM_ELEMENTS.lawDoc);
+  if (lawDocs.length === 0) return undefined;
 
-  const title = lawDoc[USLM_ELEMENTS.title] as Record<string, unknown> | undefined;
-  if (!title) return undefined;
+  const titles = findElements(lawDocs[0].children, USLM_ELEMENTS.title);
+  if (titles.length === 0) return undefined;
 
-  const identifier = title['@_identifier'] as string | undefined;
+  const titleAttrs = titles[0].attrs;
+  const identifier = titleAttrs['@_identifier'];
   if (identifier) {
-    // Pattern: /us/usc/t{num} → extract num
     const match = /\/t(\d+)$/.exec(identifier);
     if (match) return match[1];
   }
 
   // Fallback: look for num element
-  const num = title[USLM_ELEMENTS.num] as unknown;
-  const text = extractText(num);
-  const numMatch = /\d+/.exec(text);
-  return numMatch ? numMatch[0] : undefined;
+  const nums = findElements(titles[0].children, USLM_ELEMENTS.num);
+  if (nums.length > 0) {
+    const text = extractTextFromNodes(nums[0].children);
+    const numMatch = /\d+/.exec(text);
+    return numMatch ? numMatch[0] : undefined;
+  }
+
+  return undefined;
 }
 
 /** Parse a USLM XML string into a structured document */
@@ -81,15 +86,15 @@ export function parseUslmXml(xml: string): Result<ParsedDocument> {
     const parser = createUslmParser();
     const parsed: unknown = parser.parse(xml);
 
-    if (parsed === null || parsed === undefined || typeof parsed !== 'object') {
+    if (!Array.isArray(parsed) || parsed.length === 0) {
       return err(new Error('XML parsing returned empty result'));
     }
 
-    const root = parsed as Record<string, unknown>;
+    const root = parsed as unknown[];
 
     // Validate that we have a recognizable structure
-    const hasLawDoc = USLM_ELEMENTS.lawDoc in root;
-    const hasTitle = USLM_ELEMENTS.title in root;
+    const hasLawDoc = findElements(root, USLM_ELEMENTS.lawDoc).length > 0;
+    const hasTitle = findElements(root, USLM_ELEMENTS.title).length > 0;
     if (!hasLawDoc && !hasTitle) {
       return err(new Error(
         `Parsed XML missing expected root elements (${USLM_ELEMENTS.lawDoc} or ${USLM_ELEMENTS.title})`
