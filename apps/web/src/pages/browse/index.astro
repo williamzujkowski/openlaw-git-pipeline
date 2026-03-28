@@ -1,92 +1,126 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-const titles = [
-  { number: 1, name: 'General Provisions' },
-  { number: 2, name: 'The Congress' },
-  { number: 3, name: 'The President' },
-  { number: 4, name: 'Flag and Seal, Seat of Government, and the States' },
-  { number: 5, name: 'Government Organization and Employees' },
-  { number: 6, name: 'Domestic Security' },
-  { number: 7, name: 'Agriculture' },
-  { number: 8, name: 'Aliens and Nationality' },
-  { number: 9, name: 'Arbitration' },
-  { number: 10, name: 'Armed Forces' },
-  { number: 11, name: 'Bankruptcy' },
-  { number: 12, name: 'Banks and Banking' },
-  { number: 13, name: 'Census' },
-  { number: 14, name: 'Coast Guard' },
-  { number: 15, name: 'Commerce and Trade' },
-  { number: 16, name: 'Conservation' },
-  { number: 17, name: 'Copyrights' },
-  { number: 18, name: 'Crimes and Criminal Procedure' },
-  { number: 19, name: 'Customs Duties' },
-  { number: 20, name: 'Education' },
-  { number: 21, name: 'Food and Drugs' },
-  { number: 22, name: 'Foreign Relations and Intercourse' },
-  { number: 23, name: 'Highways' },
-  { number: 24, name: 'Hospitals and Asylums' },
-  { number: 25, name: 'Indians' },
-  { number: 26, name: 'Internal Revenue Code' },
-  { number: 27, name: 'Intoxicating Liquors' },
-  { number: 28, name: 'Judiciary and Judicial Procedure' },
-  { number: 29, name: 'Labor' },
-  { number: 30, name: 'Mineral Lands and Mining' },
-  { number: 31, name: 'Money and Finance' },
-  { number: 32, name: 'National Guard' },
-  { number: 33, name: 'Navigation and Navigable Waters' },
-  { number: 34, name: 'Crime Control and Law Enforcement' },
-  { number: 35, name: 'Patents' },
-  { number: 36, name: 'Patriotic and National Observances, Ceremonies, and Organizations' },
-  { number: 37, name: 'Pay and Allowances of the Uniformed Services' },
-  { number: 38, name: 'Veterans\' Benefits' },
-  { number: 39, name: 'Postal Service' },
-  { number: 40, name: 'Public Buildings, Property, and Works' },
-  { number: 41, name: 'Public Contracts' },
-  { number: 42, name: 'The Public Health and Welfare' },
-  { number: 43, name: 'Public Lands' },
-  { number: 44, name: 'Public Printing and Documents' },
-  { number: 45, name: 'Railroads' },
-  { number: 46, name: 'Shipping' },
-  { number: 47, name: 'Telecommunications' },
-  { number: 48, name: 'Territories and Insular Possessions' },
-  { number: 49, name: 'Transportation' },
-  { number: 50, name: 'War and National Defense' },
-  { number: 51, name: 'National and Commercial Space Programs' },
-  { number: 52, name: 'Voting and Elections' },
-  { number: 53, name: 'Reserved' },
-  { number: 54, name: 'National Park Service and Related Programs' },
-];
+const allStatutes = await getCollection('statutes');
+
+// Title names lookup (for display purposes)
+const TITLE_NAMES: Record<number, string> = {
+  1: 'General Provisions',
+  2: 'The Congress',
+  3: 'The President',
+  4: 'Flag and Seal, Seat of Government, and the States',
+  5: 'Government Organization and Employees',
+  6: 'Domestic Security',
+  7: 'Agriculture',
+  8: 'Aliens and Nationality',
+  9: 'Arbitration',
+  10: 'Armed Forces',
+  11: 'Bankruptcy',
+  12: 'Banks and Banking',
+  13: 'Census',
+  14: 'Coast Guard',
+  15: 'Commerce and Trade',
+  16: 'Conservation',
+  17: 'Copyrights',
+  18: 'Crimes and Criminal Procedure',
+  19: 'Customs Duties',
+  20: 'Education',
+  21: 'Food and Drugs',
+  22: 'Foreign Relations and Intercourse',
+  23: 'Highways',
+  24: 'Hospitals and Asylums',
+  25: 'Indians',
+  26: 'Internal Revenue Code',
+  27: 'Intoxicating Liquors',
+  28: 'Judiciary and Judicial Procedure',
+  29: 'Labor',
+  30: 'Mineral Lands and Mining',
+  31: 'Money and Finance',
+  32: 'National Guard',
+  33: 'Navigation and Navigable Waters',
+  34: 'Crime Control and Law Enforcement',
+  35: 'Patents',
+  36: 'Patriotic and National Observances, Ceremonies, and Organizations',
+  37: 'Pay and Allowances of the Uniformed Services',
+  38: "Veterans' Benefits",
+  39: 'Postal Service',
+  40: 'Public Buildings, Property, and Works',
+  41: 'Public Contracts',
+  42: 'The Public Health and Welfare',
+  43: 'Public Lands',
+  44: 'Public Printing and Documents',
+  45: 'Railroads',
+  46: 'Shipping',
+  47: 'Telecommunications',
+  48: 'Territories and Insular Possessions',
+  49: 'Transportation',
+  50: 'War and National Defense',
+  51: 'National and Commercial Space Programs',
+  52: 'Voting and Elections',
+  53: 'Reserved',
+  54: 'National Park Service and Related Programs',
+};
+
+// Group statutes by title number
+const byTitle = new Map<number, typeof allStatutes>();
+for (const entry of allStatutes) {
+  const titleNum = entry.data.usc_title;
+  if (!byTitle.has(titleNum)) {
+    byTitle.set(titleNum, []);
+  }
+  byTitle.get(titleNum)!.push(entry);
+}
+
+// Sort titles numerically
+const sortedTitles = [...byTitle.entries()].sort((a, b) => a[0] - b[0]);
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
   title="Browse Titles"
-  description="Browse all 54 titles of the United States Code."
+  description="Browse all titles of the United States Code."
 >
   <h1 class="text-navy dark:text-amber">United States Code</h1>
   <p>
-    The United States Code is organized into 54 titles covering the general and
-    permanent laws of the United States. Select a title to view its contents and
-    change history.
+    The United States Code is organized into titles covering the general and
+    permanent laws of the United States. Titles with available sections are
+    shown below. Select a title to view its sections.
   </p>
 
   <div class="not-prose mt-6">
     <ul class="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
-      {titles.map((t) => (
-        <li>
-          <a
-            href={`${import.meta.env.BASE_URL}browse/title-${t.number}/`}
-            class="flex items-baseline gap-3 px-4 py-3 font-sans text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
-          >
-            <span class="w-10 shrink-0 text-right font-mono text-xs text-slate dark:text-gray-500">
-              {t.number}
-            </span>
-            <span class="text-navy dark:text-gray-200">
-              {t.name}
-            </span>
-          </a>
-        </li>
-      ))}
+      {sortedTitles.map(([titleNum, entries]) => {
+        // Sort entries by section number for the link to the first section
+        const sorted = entries.sort((a, b) =>
+          Number(a.data.usc_section) - Number(b.data.usc_section)
+        );
+        const firstEntry = sorted[0];
+        const titleName = TITLE_NAMES[titleNum] ?? `Title ${titleNum}`;
+        return (
+          <li>
+            <a
+              href={`${base}statute/${firstEntry.id}/`}
+              class="flex items-baseline gap-3 px-4 py-3 font-sans text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
+            >
+              <span class="w-10 shrink-0 text-right font-mono text-xs text-slate dark:text-gray-500">
+                {titleNum}
+              </span>
+              <span class="text-navy dark:text-gray-200">
+                {titleName}
+              </span>
+              <span class="ml-auto text-xs text-gray-400">
+                {entries.length} section{entries.length !== 1 ? 's' : ''}
+              </span>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   </div>
+
+  {sortedTitles.length === 0 && (
+    <p class="mt-6 text-gray-500">No statute data available yet.</p>
+  )}
 </BaseLayout>

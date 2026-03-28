@@ -1,0 +1,54 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DiffViewer from '../../components/DiffViewer.svelte';
+import PrecedentDrawer from '../../components/PrecedentDrawer.svelte';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('statutes');
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const { usc_title, usc_section, chapter, classification, current_through } = entry.data;
+
+// Build the file path in the us-code repo for DiffViewer
+const sectionPath = `statutes/title-${usc_title}/chapter-${chapter}/section-${usc_section}.md`;
+---
+
+<BaseLayout
+  title={entry.data.title}
+  description={`${classification} - current through ${current_through}`}
+>
+  <!-- Metadata bar -->
+  <div class="not-prose mb-6 flex flex-wrap gap-3 text-xs font-sans">
+    <span class="rounded bg-navy/10 px-2 py-1 text-navy dark:bg-amber/10 dark:text-amber">
+      Title {usc_title}
+    </span>
+    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+      Chapter {chapter}
+    </span>
+    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+      {classification}
+    </span>
+    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+      Current through {current_through}
+    </span>
+  </div>
+
+  <!-- Rendered statute content -->
+  <Content />
+
+  <!-- Diff viewer for change history -->
+  <div class="not-prose mt-8">
+    <DiffViewer client:idle sectionPath={sectionPath} />
+  </div>
+
+  <!-- Precedent drawer (empty annotations for now) -->
+  <PrecedentDrawer client:idle sectionId={`${usc_title}-${usc_section}`} annotations={[]} />
+</BaseLayout>

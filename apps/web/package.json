@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && npx pagefind --site dist",
     "preview": "astro preview",
     "typecheck": "astro check",
     "lint": "echo 'web app lint not configured (Astro/Svelte needs separate plugins)'",
