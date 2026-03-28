@@ -31,6 +31,25 @@ importers:
         specifier: ^5.8.0
         version: 5.9.3
 
+  packages/annotator:
+    dependencies:
+      '@civic-source/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.1.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(yaml@2.8.3)
+
   packages/fetcher:
     dependencies:
       '@civic-source/types':
