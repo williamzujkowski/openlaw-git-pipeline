@@ -22,8 +22,8 @@
     "@civic-source/types": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^22.19.15",
     "typescript": "^5.8.0",
-    "vitest": "^3.1.0"
+    "vitest": "^4.1.2"
   }
 }
