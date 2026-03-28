@@ -15,8 +15,9 @@ import { join } from 'node:path';
 
 const RUN_E2E = process.env['RUN_E2E'] === 'true';
 
-/** Known OLRC Title 1 XML ZIP URLs to try in order */
+/** Known OLRC Title 1 XML ZIP URLs to try in order (newest first) */
 const TITLE_1_URLS = [
+  'https://uscode.house.gov/download/releasepoints/us/pl/119/73/xml_usc01@119-73.zip',
   'https://uscode.house.gov/download/releasepoints/us/pl/118/100/xml_usc01@118-100.zip',
   'https://uscode.house.gov/download/releasepoints/us/pl/118/78/xml_usc01@118-78.zip',
 ];
@@ -45,48 +46,32 @@ async function tryDownload(urls: string[]): Promise<{ buffer: Buffer; url: strin
   return null;
 }
 
-/** Extract XML from a ZIP buffer using Node.js built-in (no external deps) */
+/** Extract XML from a ZIP buffer using the system `unzip` command */
 async function extractXmlFromZip(zipBuffer: Buffer): Promise<string | null> {
-  // Use dynamic import for the decompress module or fall back to manual extraction
-  // For simplicity, use the built-in zlib + manual ZIP parsing for the single XML entry
-  const { Readable } = await import('node:stream');
-  const { pipeline } = await import('node:stream/promises');
-  const { createInflateRaw } = await import('node:zlib');
+  const { writeFile, readdir, readFile, rm } = await import('node:fs/promises');
+  const { mkdtemp } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
 
-  // Simple ZIP local file header parser — sufficient for OLRC ZIPs
-  let offset = 0;
-  while (offset < zipBuffer.length - 30) {
-    const sig = zipBuffer.readUInt32LE(offset);
-    if (sig !== 0x04034b50) break; // Not a local file header
+  const tmpDir = await mkdtemp(join(tmpdir(), 'zip-extract-'));
+  try {
+    const zipPath = join(tmpDir, 'download.zip');
+    await writeFile(zipPath, zipBuffer);
+    await execFileAsync('unzip', ['-o', '-q', zipPath, '-d', tmpDir], { timeout: 15_000 });
 
-    const compressionMethod = zipBuffer.readUInt16LE(offset + 8);
-    const compressedSize = zipBuffer.readUInt32LE(offset + 18);
-    const fileNameLen = zipBuffer.readUInt16LE(offset + 26);
-    const extraLen = zipBuffer.readUInt16LE(offset + 28);
-    const fileName = zipBuffer.toString('utf-8', offset + 30, offset + 30 + fileNameLen);
+    const entries = await readdir(tmpDir);
+    const xmlFile = entries.find((f) => f.endsWith('.xml'));
+    if (!xmlFile) return null;
 
-    const dataStart = offset + 30 + fileNameLen + extraLen;
-
-    if (fileName.endsWith('.xml')) {
-      if (compressionMethod === 0) {
-        // Stored (no compression)
-        return zipBuffer.toString('utf-8', dataStart, dataStart + compressedSize);
-      } else if (compressionMethod === 8) {
-        // Deflate
-        const compressed = zipBuffer.subarray(dataStart, dataStart + compressedSize);
-        const chunks: Buffer[] = [];
-        const inflater = createInflateRaw();
-        const readable = Readable.from(compressed);
-
-        inflater.on('data', (chunk: Buffer) => chunks.push(chunk));
-        await pipeline(readable, inflater);
-        return Buffer.concat(chunks).toString('utf-8');
-      }
-    }
-
-    offset = dataStart + compressedSize;
+    return await readFile(join(tmpDir, xmlFile), 'utf-8');
+  } catch {
+    return null;
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
   }
-  return null;
 }
 
 describe.skipIf(!RUN_E2E)('E2E: Real OLRC Title 1 Pipeline', () => {
@@ -108,7 +93,9 @@ describe.skipIf(!RUN_E2E)('E2E: Real OLRC Title 1 Pipeline', () => {
     if (xml === null) return;
 
     expect(xml.length).toBeGreaterThan(100);
-    expect(xml).toContain('<lawDoc');
+    // OLRC uses <uscDoc> (USLM 1.0) or <lawDoc> (USLM 2.0)
+    const hasRootElement = xml.includes('<lawDoc') || xml.includes('<uscDoc');
+    expect(hasRootElement).toBe(true);
 
     // Step 3: Transform using the real transformer
     const { XmlToMarkdownAdapter } = await import('@civic-source/transformer');

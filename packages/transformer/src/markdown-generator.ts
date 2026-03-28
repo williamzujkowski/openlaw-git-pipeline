@@ -138,6 +138,13 @@ export function generateSectionBody(sectionChildren: unknown[]): string {
     lines.push('');
   }
 
+  // Direct content under section (USLM 1.0 sections may have <content> without subsections)
+  const directContent = extractContent(sectionChildren);
+  if (directContent) {
+    lines.push(directContent);
+    lines.push('');
+  }
+
   // Walk nested list elements
   walkListElements(sectionChildren, 0, lines);
 

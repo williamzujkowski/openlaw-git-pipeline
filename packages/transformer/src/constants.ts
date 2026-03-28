@@ -1,12 +1,21 @@
 /** USLM XML element names and transformer configuration */
 
-/** USLM namespace URI */
+/**
+ * USLM namespace URI.
+ * Note: OLRC publishes USLM 1.0 (http://xml.house.gov/schemas/uslm/1.0)
+ * which uses `<uscDoc>` as root, while the USLM 2.0 spec uses `<lawDoc>`.
+ * The namespace URI is the same; only the schema version and root element differ.
+ */
 export const USLM_NAMESPACE = 'https://xml.house.gov/schemas/uslm/1.0';
 
 /** Structural USLM element names (hierarchy order) */
 export const USLM_ELEMENTS = {
-  /** Top-level document wrapper */
+  /** Top-level document wrapper (USLM 2.0) */
   lawDoc: 'lawDoc',
+  /** Top-level document wrapper (USLM 1.0, used by OLRC) */
+  uscDoc: 'uscDoc',
+  /** Main content wrapper (USLM 1.0 wraps content in <main>) */
+  main: 'main',
   /** Title of the US Code (e.g., Title 26) */
   title: 'title',
   /** Subtitle grouping */

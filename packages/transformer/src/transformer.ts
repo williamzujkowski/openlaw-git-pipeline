@@ -109,9 +109,14 @@ export class XmlToMarkdownAdapter implements IXmlToMarkdownAdapter {
     const { root, titleNumber } = parseResult.value;
     const titleNum = titleNumber ?? '0';
 
-    // Find the title node — may be inside lawDoc or at root
-    const firstLawDoc = findElements(root, USLM_ELEMENTS.lawDoc)[0];
-    const titleSource = firstLawDoc ? firstLawDoc.children : root;
+    // Find the title node — may be inside lawDoc (USLM 2.0) or uscDoc (USLM 1.0)
+    const docRoot = findElements(root, USLM_ELEMENTS.lawDoc)[0]
+      ?? findElements(root, USLM_ELEMENTS.uscDoc)[0];
+    const docChildren = docRoot ? docRoot.children : root;
+
+    // USLM 1.0 wraps content in <main>; USLM 2.0 has <title> directly under root
+    const mainEl = findElements(docChildren, USLM_ELEMENTS.main)[0];
+    const titleSource = mainEl ? mainEl.children : docChildren;
     const firstTitle = findElements(titleSource, USLM_ELEMENTS.title)[0];
 
     if (!firstTitle) {

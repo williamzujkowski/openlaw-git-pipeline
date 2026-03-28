@@ -54,11 +54,21 @@ export function extractText(node: unknown): string {
  * Find the title number from a parsed USLM document (preserveOrder format).
  * Looks for the identifier attribute on the title element.
  */
-function findTitleNumber(root: unknown[]): string | undefined {
-  const firstLawDoc = findElements(root, USLM_ELEMENTS.lawDoc)[0];
-  if (!firstLawDoc) return undefined;
+/** Find the document root element — either lawDoc (USLM 2.0) or uscDoc (USLM 1.0) */
+function findDocRoot(root: unknown[]): { children: unknown[]; attrs: Record<string, string> } | undefined {
+  return findElements(root, USLM_ELEMENTS.lawDoc)[0]
+    ?? findElements(root, USLM_ELEMENTS.uscDoc)[0];
+}
 
-  const firstTitle = findElements(firstLawDoc.children, USLM_ELEMENTS.title)[0];
+function findTitleNumber(root: unknown[]): string | undefined {
+  const docRoot = findDocRoot(root);
+  if (!docRoot) return undefined;
+
+  // USLM 1.0 wraps content in <main>; USLM 2.0 has <title> directly under root
+  const mainEl = findElements(docRoot.children, USLM_ELEMENTS.main)[0];
+  const searchChildren = mainEl ? mainEl.children : docRoot.children;
+
+  const firstTitle = findElements(searchChildren, USLM_ELEMENTS.title)[0];
   if (!firstTitle) return undefined;
 
   const titleAttrs = firstTitle.attrs;
@@ -92,12 +102,13 @@ export function parseUslmXml(xml: string): Result<ParsedDocument> {
 
     const root = parsed as unknown[];
 
-    // Validate that we have a recognizable structure
+    // Validate that we have a recognizable structure (lawDoc for USLM 2.0, uscDoc for USLM 1.0)
     const hasLawDoc = findElements(root, USLM_ELEMENTS.lawDoc).length > 0;
+    const hasUscDoc = findElements(root, USLM_ELEMENTS.uscDoc).length > 0;
     const hasTitle = findElements(root, USLM_ELEMENTS.title).length > 0;
-    if (!hasLawDoc && !hasTitle) {
+    if (!hasLawDoc && !hasUscDoc && !hasTitle) {
       return err(new Error(
-        `Parsed XML missing expected root elements (${USLM_ELEMENTS.lawDoc} or ${USLM_ELEMENTS.title})`
+        `Parsed XML missing expected root elements (${USLM_ELEMENTS.lawDoc}, ${USLM_ELEMENTS.uscDoc}, or ${USLM_ELEMENTS.title})`
       ));
     }
 

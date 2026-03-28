@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uscDoc xsi:schemaLocation="http://xml.house.gov/schemas/uslm/1.0 USLM-1.0.15.xsd" xml:lang="en" identifier="/us/usc/t1" xmlns="http://xml.house.gov/schemas/uslm/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/">
+<meta>
+  <dc:title>Title 1</dc:title>
+  <dc:type>USCTitle</dc:type>
+  <docNumber>1</docNumber>
+  <docPublicationName>Online@119-73</docPublicationName>
+  <property role="is-positive-law">yes</property>
+  <dc:publisher>OLRC</dc:publisher>
+  <dcterms:created>2026-03-26T12:24:05</dcterms:created>
+  <dc:creator>USCConverter 1.7.2</dc:creator>
+</meta>
+<main>
+<title id="id35d0c7ca-2930-11f1-b722-ea97c32023d5" identifier="/us/usc/t1"><num value="1">Title 1—</num><heading>GENERAL PROVISIONS</heading>
+<chapter style="-uslm-lc:I81" id="id35d0c7d5-2930-11f1-b722-ea97c32023d5" identifier="/us/usc/t1/ch1"><num value="1">CHAPTER 1—</num><heading>RULES OF CONSTRUCTION</heading>
+<section style="-uslm-lc:I80" id="id35d0c7da-2930-11f1-b722-ea97c32023d5" identifier="/us/usc/t1/s1"><num value="1">§ 1.</num><heading> Words denoting number, gender, and so forth</heading><content>
+<p style="-uslm-lc:I11" class="indent0">In determining the meaning of any Act of Congress, unless the context indicates otherwise—</p>
+<p style="-uslm-lc:I12" role="listItem" class="indent1">words importing the singular include and apply to several persons, parties, or things;</p>
+<p style="-uslm-lc:I12" role="listItem" class="indent1">words importing the plural include the singular;</p>
+<p style="-uslm-lc:I12" role="listItem" class="indent1">words importing the masculine gender include the feminine as well;</p>
+</content><sourceCredit id="id35d0c7db-2930-11f1-b722-ea97c32023d5">(<ref href="/us/act/1947-07-30/ch388">July 30, 1947, ch. 388</ref>, <ref href="/us/stat/61/633">61 Stat. 633</ref>.)</sourceCredit>
+</section>
+<section style="-uslm-lc:I80" id="id35d58304-2930-11f1-b722-ea97c32023d5" identifier="/us/usc/t1/s2"><num value="2">§ 2.</num><heading> "County" as including "parish", and so forth</heading><content>
+<p style="-uslm-lc:I11" class="indent0">The word "county" includes a parish, or any other equivalent subdivision of a State or Territory of the United States.</p>
+</content><sourceCredit>(<ref href="/us/act/1947-07-30/ch388">July 30, 1947, ch. 388</ref>, <ref href="/us/stat/61/633">61 Stat. 633</ref>.)</sourceCredit>
+</section>
+</chapter>
+</title>
+</main>
+</uscDoc>
