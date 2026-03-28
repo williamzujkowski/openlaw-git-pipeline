@@ -18,6 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@civic-source/shared": "workspace:*",
     "@civic-source/types": "workspace:*",
     "zod": "^3.24.0"
   },

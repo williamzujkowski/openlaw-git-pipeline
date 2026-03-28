@@ -1,7 +1,7 @@
 import { type PrecedentAnnotation, PrecedentAnnotationSchema, type Result, ok, err } from '@civic-source/types';
+import { type Logger, createLogger } from '@civic-source/shared';
 import { type CourtListenerResult, CourtListenerClient } from './client.js';
 import { COURT_PRIORITY, MAX_HOLDING_SUMMARY_LENGTH, getApiToken } from './constants.js';
-import { type Logger, createLogger } from './logger.js';
 
 /** Result of annotating a section, including the output path */
 export interface AnnotationResult {
@@ -108,7 +108,7 @@ export class Annotator {
       lastSyncedET: isoNow,
       cases: sorted.map((result) => ({
         caseName: result.caseName,
-        citation: result.citation.length > 0 ? result.citation[0] : '',
+        citation: result.citation[0] ?? '',
         court: mapCourt(result.court),
         date: result.dateFiled,
         holdingSummary: truncateSnippet(result.snippet),

@@ -23,8 +23,8 @@ describe('Title 18 golden snapshot', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value).toHaveLength(2);
-    expect(result.value[0].path).toBe('statutes/title-18/chapter-1/section-1.md');
-    expect(result.value[1].path).toBe('statutes/title-18/chapter-1/section-2.md');
+    expect(result.value[0]?.path).toBe('statutes/title-18/chapter-1/section-1.md');
+    expect(result.value[1]?.path).toBe('statutes/title-18/chapter-1/section-2.md');
   });
 
   it('generates frontmatter with correct fields for section 1', () => {
@@ -32,7 +32,7 @@ describe('Title 18 golden snapshot', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const content = result.value[0].content;
+    const content = result.value[0]!.content;
     expect(content).toContain('---');
     expect(content).toContain('usc_title: 18');
     expect(content).toContain('usc_section: "1"');
@@ -46,7 +46,7 @@ describe('Title 18 golden snapshot', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const content = result.value[0].content;
+    const content = result.value[0]!.content;
     // Section heading
     expect(content).toContain('# 1 Offenses classified');
     // (a) at depth 0 — no indent
@@ -64,7 +64,7 @@ describe('Title 18 golden snapshot', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const content = result.value[0].content;
+    const content = result.value[0]!.content;
     // The <ref> inside subsection (b) should have its text preserved in position
     expect(content).toContain('section 3559');
     expect(content).toMatch(/provided in.*section 3559.*of this title/);
@@ -75,7 +75,7 @@ describe('Title 18 golden snapshot', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const content = result.value[1].content;
+    const content = result.value[1]!.content;
     expect(content).toContain('# 2 Principals');
     expect(content).toContain('(a) Whoever commits an offense against the United States');
     expect(content).toContain('(b) Whoever willfully causes an act to be done');
@@ -87,7 +87,7 @@ describe('Title 18 golden snapshot', () => {
     if (!result.ok) return;
 
     // Extract just the body (after the second --- line)
-    const content = result.value[0].content;
+    const content = result.value[0]!.content;
     const bodyStart = content.indexOf('---', content.indexOf('---') + 1);
     const body = content.slice(bodyStart + 3).trim();
 

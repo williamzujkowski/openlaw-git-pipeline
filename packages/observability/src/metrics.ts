@@ -1,6 +1,6 @@
 /** Pipeline metrics collector for observability and GitHub Actions job summaries. */
 
-const TIMEZONE = 'America/New_York';
+import { TIMEZONE } from '@civic-source/shared';
 
 /** Recorded metrics for a pipeline run. */
 export interface PipelineMetrics {

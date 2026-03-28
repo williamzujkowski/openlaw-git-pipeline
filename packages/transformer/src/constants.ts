@@ -1,8 +1,5 @@
 /** USLM XML element names and transformer configuration */
 
-/** IANA timezone for all date operations */
-export const TIMEZONE = 'America/New_York';
-
 /** USLM namespace URI */
 export const USLM_NAMESPACE = 'https://xml.house.gov/schemas/uslm/1.0';
 

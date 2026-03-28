@@ -12,20 +12,11 @@ export const RATE_LIMIT_PER_HOUR = 5000;
 /** Environment variable name for the API token */
 export const API_TOKEN_ENV_VAR = 'COURTLISTENER_API_TOKEN';
 
-/** Maximum retry attempts for network requests */
-export const MAX_RETRIES = 3;
-
-/** Base delay in ms for exponential backoff (doubles each retry) */
-export const BASE_BACKOFF_MS = 1000;
-
 /** Default number of results to return per search */
 export const DEFAULT_PAGE_SIZE = 20;
 
 /** Maximum characters for holding summary (truncated from snippet) */
 export const MAX_HOLDING_SUMMARY_LENGTH = 500;
-
-/** IANA timezone for all date operations */
-export const TIMEZONE = 'America/New_York';
 
 /**
  * Default court priority for result ordering.

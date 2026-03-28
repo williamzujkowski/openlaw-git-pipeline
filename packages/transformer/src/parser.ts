@@ -2,7 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { ok, err } from '@civic-source/types';
 import type { Result } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
-import { createLogger } from './logger.js';
+import { createLogger } from '@civic-source/shared';
 import { extractTextFromNodes, findElements } from './xml-utils.js';
 
 const log = createLogger('parser');
@@ -55,25 +55,25 @@ export function extractText(node: unknown): string {
  * Looks for the identifier attribute on the title element.
  */
 function findTitleNumber(root: unknown[]): string | undefined {
-  const lawDocs = findElements(root, USLM_ELEMENTS.lawDoc);
-  if (lawDocs.length === 0) return undefined;
+  const firstLawDoc = findElements(root, USLM_ELEMENTS.lawDoc)[0];
+  if (!firstLawDoc) return undefined;
 
-  const titles = findElements(lawDocs[0].children, USLM_ELEMENTS.title);
-  if (titles.length === 0) return undefined;
+  const firstTitle = findElements(firstLawDoc.children, USLM_ELEMENTS.title)[0];
+  if (!firstTitle) return undefined;
 
-  const titleAttrs = titles[0].attrs;
+  const titleAttrs = firstTitle.attrs;
   const identifier = titleAttrs['@_identifier'];
   if (identifier) {
     const match = /\/t(\d+)$/.exec(identifier);
-    if (match) return match[1];
+    if (match?.[1]) return match[1];
   }
 
   // Fallback: look for num element
-  const nums = findElements(titles[0].children, USLM_ELEMENTS.num);
-  if (nums.length > 0) {
-    const text = extractTextFromNodes(nums[0].children);
+  const firstNum = findElements(firstTitle.children, USLM_ELEMENTS.num)[0];
+  if (firstNum) {
+    const text = extractTextFromNodes(firstNum.children);
     const numMatch = /\d+/.exec(text);
-    return numMatch ? numMatch[0] : undefined;
+    return numMatch?.[0];
   }
 
   return undefined;

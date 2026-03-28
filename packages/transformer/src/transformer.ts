@@ -1,7 +1,7 @@
 import { ok, err } from '@civic-source/types';
 import type { Result, IXmlToMarkdownAdapter } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
-import { createLogger } from './logger.js';
+import { createLogger } from '@civic-source/shared';
 import { parseUslmXml } from './parser.js';
 import { extractTextFromNodes, findElements } from './xml-utils.js';
 import { generateMarkdownForSection } from './markdown-generator.js';
@@ -18,11 +18,11 @@ function extractNumFromId(
   const id = attrs['@_identifier'];
   if (id) {
     const match = /(\d+[\w-]*)$/.exec(id);
-    if (match) return match[1];
+    if (match?.[1]) return match[1];
   }
-  const nums = findElements(children, USLM_ELEMENTS.num);
-  if (nums.length > 0) {
-    const text = extractTextFromNodes(nums[0].children).replace(/[^0-9a-zA-Z-]/g, '');
+  const firstNum = findElements(children, USLM_ELEMENTS.num)[0];
+  if (firstNum) {
+    const text = extractTextFromNodes(firstNum.children).replace(/[^0-9a-zA-Z-]/g, '');
     return text || fallback;
   }
   return fallback;
@@ -110,15 +110,15 @@ export class XmlToMarkdownAdapter implements IXmlToMarkdownAdapter {
     const titleNum = titleNumber ?? '0';
 
     // Find the title node — may be inside lawDoc or at root
-    const lawDocs = findElements(root, USLM_ELEMENTS.lawDoc);
-    const titleSource = lawDocs.length > 0 ? lawDocs[0].children : root;
-    const titles = findElements(titleSource, USLM_ELEMENTS.title);
+    const firstLawDoc = findElements(root, USLM_ELEMENTS.lawDoc)[0];
+    const titleSource = firstLawDoc ? firstLawDoc.children : root;
+    const firstTitle = findElements(titleSource, USLM_ELEMENTS.title)[0];
 
-    if (titles.length === 0) {
+    if (!firstTitle) {
       return err(new Error('No title element found in document'));
     }
 
-    const titleChildren = titles[0].children;
+    const titleChildren = firstTitle.children;
     const entries = walkTitle(titleChildren);
     const files: MarkdownFile[] = [];
     let processed = 0;

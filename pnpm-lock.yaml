@@ -38,6 +38,9 @@ importers:
       '@astrojs/svelte':
         specifier: ^7.2.5
         version: 7.2.5(@types/node@25.5.0)(astro@5.18.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.0)(typescript@5.9.3)(yaml@2.8.3))(jiti@2.6.1)(lightningcss@1.32.0)(svelte@5.55.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@civic-source/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@octokit/rest':
         specifier: ^22.0.1
         version: 22.0.1
@@ -69,6 +72,9 @@ importers:
 
   packages/annotator:
     dependencies:
+      '@civic-source/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@civic-source/types':
         specifier: workspace:*
         version: link:../types
@@ -88,6 +94,9 @@ importers:
 
   packages/fetcher:
     dependencies:
+      '@civic-source/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@civic-source/types':
         specifier: workspace:*
         version: link:../types
@@ -104,6 +113,9 @@ importers:
 
   packages/observability:
     dependencies:
+      '@civic-source/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@civic-source/types':
         specifier: workspace:*
         version: link:../types
@@ -140,8 +152,23 @@ importers:
         specifier: ^5.8.0
         version: 5.9.3
 
+  packages/shared:
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.1.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.3)
+
   packages/transformer:
     dependencies:
+      '@civic-source/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@civic-source/types':
         specifier: workspace:*
         version: link:../types

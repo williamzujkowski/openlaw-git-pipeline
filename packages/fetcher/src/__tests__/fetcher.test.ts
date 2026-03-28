@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createHash } from 'node:crypto';
 import { OlrcFetcher, sha256, fetchWithRetry, parseReleasePoints } from '../fetcher.js';
 import { HashStore } from '../hash-store.js';
-import { createLogger } from '../logger.js';
+import { createLogger } from '@civic-source/shared';
 import type { ReleasePoint } from '@civic-source/types';
 
 // --- sha256 ---
@@ -29,9 +29,9 @@ describe('parseReleasePoints', () => {
     `;
     const points = parseReleasePoints(html);
     expect(points).toHaveLength(2);
-    expect(points[0].title).toBe('42');
-    expect(points[0].uslmUrl).toContain('usc42@118-200.zip');
-    expect(points[1].title).toBe('26');
+    expect(points[0]?.title).toBe('42');
+    expect(points[0]?.uslmUrl).toContain('usc42@118-200.zip');
+    expect(points[1]?.title).toBe('26');
   });
 
   it('returns empty array for HTML with no matching links', () => {
@@ -42,7 +42,7 @@ describe('parseReleasePoints', () => {
     const html = `<a href="/download/releasepoints/us/pl/118/5a/usc5a@118-200.zip">Title 5a</a>`;
     const points = parseReleasePoints(html);
     expect(points).toHaveLength(1);
-    expect(points[0].title).toBe('5a');
+    expect(points[0]?.title).toBe('5a');
   });
 });
 
@@ -162,7 +162,7 @@ describe('OlrcFetcher', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value).toHaveLength(1);
-      expect(result.value[0].title).toBe('42');
+      expect(result.value[0]?.title).toBe('42');
     }
   });
 
@@ -178,7 +178,7 @@ describe('OlrcFetcher', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value).toHaveLength(1);
-      expect(result.value[0].title).toBe('26');
+      expect(result.value[0]?.title).toBe('26');
     }
   });
 
@@ -271,7 +271,9 @@ describe('createLogger', () => {
       done();
 
       expect(output.length).toBeGreaterThanOrEqual(1);
-      const entry = JSON.parse(output[output.length - 1]) as Record<string, unknown>;
+      const lastOutput = output[output.length - 1];
+      expect(lastOutput).toBeDefined();
+      const entry = JSON.parse(lastOutput!) as Record<string, unknown>;
       expect(entry['message']).toBe('operation completed');
       expect(typeof entry['elapsedMs']).toBe('number');
     } finally {
@@ -293,7 +295,7 @@ describe('createLogger', () => {
       log.info('should not appear');
       log.warn('should appear');
       expect(output).toHaveLength(1);
-      expect(output[0]).toContain('should appear');
+      expect(output[0] ?? '').toContain('should appear');
     } finally {
       process.stdout.write = origWrite;
     }

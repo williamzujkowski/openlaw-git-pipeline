@@ -12,6 +12,7 @@
     "test": "echo 'no tests yet'"
   },
   "dependencies": {
+    "@civic-source/types": "workspace:*",
     "@astrojs/svelte": "^7.2.5",
     "@octokit/rest": "^22.0.1",
     "@tailwindcss/typography": "^0.5.19",

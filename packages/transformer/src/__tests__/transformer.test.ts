@@ -277,8 +277,8 @@ describe('XmlToMarkdownAdapter', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value).toHaveLength(2);
-    expect(result.value[0].path).toContain('section-101');
-    expect(result.value[1].path).toContain('section-102');
+    expect(result.value[0]?.path).toContain('section-101');
+    expect(result.value[1]?.path).toContain('section-102');
   });
 
   it('handles empty title with no sections gracefully', () => {

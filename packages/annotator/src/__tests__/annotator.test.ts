@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PrecedentAnnotationSchema } from '@civic-source/types';
+import { createLogger } from '@civic-source/shared';
 import { Annotator, mapCourt, buildAnnotationPath, annotationToYaml } from '../annotator.js';
 import { CourtListenerClient, type CourtListenerResult } from '../client.js';
-import { createLogger } from '../logger.js';
 
 /** Build a fake CourtListener result */
 function fakeResult(overrides: Partial<CourtListenerResult> = {}): CourtListenerResult {
@@ -79,10 +79,12 @@ describe('Annotator', () => {
     expect(result.value.path).toBe('annotations/title-18/section-111.yaml');
     expect(result.value.annotation.targetSection).toBe('18 U.S.C. 111');
     expect(result.value.annotation.cases).toHaveLength(1);
-    expect(result.value.annotation.cases[0].caseName).toBe('Doe v. United States');
-    expect(result.value.annotation.cases[0].citation).toBe('123 U.S. 456');
-    expect(result.value.annotation.cases[0].court).toBe('SCOTUS');
-    expect(result.value.annotation.cases[0].url).toBe(
+    const firstCase = result.value.annotation.cases[0];
+    expect(firstCase).toBeDefined();
+    expect(firstCase?.caseName).toBe('Doe v. United States');
+    expect(firstCase?.citation).toBe('123 U.S. 456');
+    expect(firstCase?.court).toBe('SCOTUS');
+    expect(firstCase?.url).toBe(
       'https://www.courtlistener.com/opinion/12345/doe-v-united-states/'
     );
   });
@@ -113,9 +115,9 @@ describe('Annotator', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.annotation.cases[0].caseName).toBe('SCOTUS Case');
-    expect(result.value.annotation.cases[1].caseName).toBe('Appellate Case');
-    expect(result.value.annotation.cases[2].caseName).toBe('District Case');
+    expect(result.value.annotation.cases[0]?.caseName).toBe('SCOTUS Case');
+    expect(result.value.annotation.cases[1]?.caseName).toBe('Appellate Case');
+    expect(result.value.annotation.cases[2]?.caseName).toBe('District Case');
   });
 
   it('truncates snippet to 500 chars for holdingSummary', async () => {
@@ -127,8 +129,8 @@ describe('Annotator', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.annotation.cases[0].holdingSummary).toHaveLength(503); // 500 + '...'
-    expect(result.value.annotation.cases[0].holdingSummary.endsWith('...')).toBe(true);
+    expect(result.value.annotation.cases[0]?.holdingSummary).toHaveLength(503); // 500 + '...'
+    expect(result.value.annotation.cases[0]?.holdingSummary.endsWith('...')).toBe(true);
   });
 
   it('uses first citation when multiple are available', async () => {
@@ -141,7 +143,7 @@ describe('Annotator', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.annotation.cases[0].citation).toBe('123 U.S. 456');
+    expect(result.value.annotation.cases[0]?.citation).toBe('123 U.S. 456');
   });
 
   it('handles empty citation array gracefully', async () => {
@@ -152,7 +154,7 @@ describe('Annotator', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.annotation.cases[0].citation).toBe('');
+    expect(result.value.annotation.cases[0]?.citation).toBe('');
   });
 
   it('propagates client errors', async () => {
@@ -264,7 +266,7 @@ describe('CourtListenerClient', () => {
     await client.searchByStatute('18 U.S.C. 111');
 
     const calls = mockFetch.mock.calls as unknown as [string, RequestInit][];
-    const calledUrl = calls[0][0];
+    const calledUrl = calls[0]?.[0] ?? '';
     expect(calledUrl).toContain('q=%2218+U.S.C.+111%22');
 
     vi.unstubAllGlobals();

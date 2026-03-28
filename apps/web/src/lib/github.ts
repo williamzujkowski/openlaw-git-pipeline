@@ -12,6 +12,15 @@ export interface DiffLine {
   content: string;
 }
 
+export interface FileDiffOptions {
+  owner: string;
+  repo: string;
+  base: string;
+  head: string;
+  path: string;
+  token?: string;
+}
+
 function createClient(token?: string): Octokit {
   return new Octokit(token ? { auth: token } : {});
 }
@@ -22,47 +31,50 @@ export async function getFileHistory(
   path: string,
   token?: string,
 ): Promise<CommitInfo[]> {
-  const octokit = createClient(token);
-  const response = await octokit.repos.listCommits({ owner, repo, path, per_page: 50 });
+  try {
+    const octokit = createClient(token);
+    const response = await octokit.repos.listCommits({ owner, repo, path, per_page: 50 });
 
-  return response.data.map((c) => ({
-    sha: c.sha,
-    message: c.commit.message.split("\n")[0],
-    date: c.commit.author?.date ?? "",
-    author: c.commit.author?.name ?? "unknown",
-  }));
+    return response.data.map((c) => ({
+      sha: c.sha,
+      message: c.commit.message.split("\n")[0] ?? "",
+      date: c.commit.author?.date ?? "",
+      author: c.commit.author?.name ?? "unknown",
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function getFileDiff(
-  owner: string,
-  repo: string,
-  base: string,
-  head: string,
-  path: string,
-  token?: string,
-): Promise<DiffLine[]> {
-  const octokit = createClient(token);
-  const response = await octokit.repos.compareCommits({
-    owner,
-    repo,
-    base,
-    head,
-    mediaType: { format: "diff" },
-  });
+  options: FileDiffOptions,
+): Promise<DiffLine[] | null> {
+  try {
+    const octokit = createClient(options.token);
+    const response = await octokit.repos.compareCommits({
+      owner: options.owner,
+      repo: options.repo,
+      base: options.base,
+      head: options.head,
+      mediaType: { format: "diff" },
+    });
 
-  const files = response.data.files ?? [];
-  const file = files.find((f) => f.filename === path);
-  if (!file?.patch) return [];
+    const files = response.data.files ?? [];
+    const file = files.find((f) => f.filename === options.path);
+    if (!file?.patch) return [];
 
-  return file.patch.split("\n").map((line) => {
-    if (line.startsWith("+") && !line.startsWith("+++")) {
-      return { type: "add", content: line };
-    }
-    if (line.startsWith("-") && !line.startsWith("---")) {
-      return { type: "del", content: line };
-    }
-    return { type: "context", content: line };
-  });
+    return file.patch.split("\n").map((line) => {
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        return { type: "add", content: line };
+      }
+      if (line.startsWith("-") && !line.startsWith("---")) {
+        return { type: "del", content: line };
+      }
+      return { type: "context", content: line };
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function isRateLimited(error: unknown): boolean {

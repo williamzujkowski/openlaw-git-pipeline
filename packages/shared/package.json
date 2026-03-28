@@ -1,5 +1,5 @@
 {
-  "name": "@civic-source/fetcher",
+  "name": "@civic-source/shared",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -16,10 +16,6 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run"
-  },
-  "dependencies": {
-    "@civic-source/shared": "workspace:*",
-    "@civic-source/types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

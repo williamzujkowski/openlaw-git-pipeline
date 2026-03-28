@@ -1,14 +1,7 @@
-export interface CaseAnnotation {
-  caseName: string;
-  citation: string;
-  court: 'SCOTUS' | 'Appellate' | 'District';
-  date: string;
-  holdingSummary: string;
-  url: string;
-}
+import type { PrecedentAnnotation } from '@civic-source/types';
 
-export interface PrecedentData {
-  targetSection: string;
-  lastSyncedET: string;
-  cases: CaseAnnotation[];
-}
+/** A single case annotation — extracted from PrecedentAnnotation.cases array */
+export type CaseAnnotation = PrecedentAnnotation['cases'][number];
+
+/** Re-export for convenience */
+export type PrecedentData = PrecedentAnnotation;

@@ -1,13 +1,11 @@
 import { type Result, ok, err } from '@civic-source/types';
+import { type Logger, MAX_RETRIES, BASE_BACKOFF_MS } from '@civic-source/shared';
 import {
   COURTLISTENER_BASE_URL,
   SEARCH_ENDPOINT,
   RATE_LIMIT_PER_HOUR,
-  MAX_RETRIES,
-  BASE_BACKOFF_MS,
   DEFAULT_PAGE_SIZE,
 } from './constants.js';
-import { type Logger } from './logger.js';
 
 /** Raw result shape from the CourtListener search API */
 export interface CourtListenerResult {

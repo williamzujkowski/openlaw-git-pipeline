@@ -1,12 +1,8 @@
 import { createHash } from 'node:crypto';
 import { type IUsCodeFetcher, type ReleasePoint, type Result, ok, err } from '@civic-source/types';
-import {
-  OLRC_DOWNLOAD_PAGE,
-  MAX_RETRIES,
-  BASE_BACKOFF_MS,
-} from './constants.js';
+import { type Logger, createLogger, fetchWithRetry as sharedFetchWithRetry } from '@civic-source/shared';
+import { OLRC_DOWNLOAD_PAGE } from './constants.js';
 import { HashStore } from './hash-store.js';
-import { type Logger, createLogger } from './logger.js';
 
 /** Compute SHA-256 hex digest of a buffer */
 export function sha256(data: Buffer): string {
@@ -15,40 +11,13 @@ export function sha256(data: Buffer): string {
 
 /**
  * Fetch with exponential backoff retry.
- * Retries up to `MAX_RETRIES` times on network/server errors.
+ * Delegates to the shared fetchWithRetry utility.
  */
 export async function fetchWithRetry(
   url: string,
   logger: Logger
 ): Promise<Result<Response>> {
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return ok(response);
-
-      if (response.status >= 500 && attempt < MAX_RETRIES) {
-        const delayMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
-        logger.warn('Server error, retrying', { url, status: response.status, attempt, delayMs });
-        await sleep(delayMs);
-        continue;
-      }
-      return err(new Error(`HTTP ${response.status}: ${response.statusText}`));
-    } catch (error: unknown) {
-      if (attempt < MAX_RETRIES) {
-        const delayMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
-        logger.warn('Network error, retrying', { url, attempt, delayMs });
-        await sleep(delayMs);
-        continue;
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      return err(new Error(`Network error after ${MAX_RETRIES} attempts: ${message}`));
-    }
-  }
-  return err(new Error(`Failed after ${MAX_RETRIES} attempts`));
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return sharedFetchWithRetry(url, { logger });
 }
 
 /**
@@ -62,7 +31,9 @@ export function parseReleasePoints(html: string): ReleasePoint[] {
   let match: RegExpExecArray | null;
 
   while ((match = linkPattern.exec(html)) !== null) {
-    const [, path, , title] = match;
+    const path = match[1];
+    const title = match[3];
+    if (!path || !title) continue;
     const fullUrl = path.startsWith('http')
       ? path
       : `https://uscode.house.gov${path}`;

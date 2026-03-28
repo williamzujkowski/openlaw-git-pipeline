@@ -59,7 +59,8 @@
     const base = idxA > idxB ? a : b;
     const head = idxA > idxB ? b : a;
     try {
-      diffLines = await getFileDiff(repoOwner, repoName, base, head, sectionPath, githubToken);
+      const result = await getFileDiff({ owner: repoOwner, repo: repoName, base, head, path: sectionPath, token: githubToken });
+      diffLines = result ?? [];
     } catch (e: unknown) {
       if (isRateLimited(e)) {
         error = "GitHub API rate limit reached. Try again later or provide a token.";

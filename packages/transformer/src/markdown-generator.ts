@@ -69,26 +69,28 @@ export function nestingDepthFor(elementName: string): number {
 /** Extract marker text like "(a)" from a num element within node children */
 function extractMarker(children: unknown[]): string {
   const nums = findElements(children, USLM_ELEMENTS.num);
-  if (nums.length === 0) return '';
-  return extractTextFromNodes(nums[0].children).trim();
+  const first = nums[0];
+  if (!first) return '';
+  return extractTextFromNodes(first.children).trim();
 }
 
 /** Extract heading text from node children */
 function extractHeading(children: unknown[]): string {
   const headings = findElements(children, USLM_ELEMENTS.heading);
-  if (headings.length === 0) return '';
-  return extractTextFromNodes(headings[0].children).trim();
+  const first = headings[0];
+  if (!first) return '';
+  return extractTextFromNodes(first.children).trim();
 }
 
 /** Extract content/chapeau text from node children */
 function extractContent(children: unknown[]): string {
-  const chapeaux = findElements(children, USLM_ELEMENTS.chapeau);
-  if (chapeaux.length > 0) {
-    return extractTextFromNodes(chapeaux[0].children).trim();
+  const firstChapeau = findElements(children, USLM_ELEMENTS.chapeau)[0];
+  if (firstChapeau) {
+    return extractTextFromNodes(firstChapeau.children).trim();
   }
-  const contents = findElements(children, USLM_ELEMENTS.content);
-  if (contents.length > 0) {
-    return extractTextFromNodes(contents[0].children).trim();
+  const firstContent = findElements(children, USLM_ELEMENTS.content)[0];
+  if (firstContent) {
+    return extractTextFromNodes(firstContent.children).trim();
   }
   return '';
 }
