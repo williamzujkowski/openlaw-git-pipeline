@@ -66,6 +66,28 @@ importers:
         specifier: ^3.1.0
         version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(yaml@2.8.3)
 
+  packages/pipeline:
+    dependencies:
+      '@civic-source/annotator':
+        specifier: workspace:*
+        version: link:../annotator
+      '@civic-source/fetcher':
+        specifier: workspace:*
+        version: link:../fetcher
+      '@civic-source/transformer':
+        specifier: workspace:*
+        version: link:../transformer
+      '@civic-source/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+
   packages/transformer:
     dependencies:
       '@civic-source/types':

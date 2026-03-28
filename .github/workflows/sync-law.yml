@@ -1,0 +1,278 @@
+name: Sync US Code
+
+on:
+  schedule:
+    # Sunday 2:00 AM ET (07:00 UTC during EDT, 06:00 UTC during EST)
+    - cron: '0 7 * * 0'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 60
+    steps:
+      # Step 1: Checkout pipeline code
+      - name: Checkout us-code-tracker
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Step 2: Setup Node.js 22 + pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      # Step 4: Run fetcher — check for new OLRC release
+      - name: Check for new OLRC release
+        id: fetch
+        run: |
+          node --input-type=module <<'SCRIPT'
+          import { OlrcFetcher, HashStore } from '@civic-source/fetcher';
+
+          const fetcher = new OlrcFetcher({ hashStore: new HashStore() });
+          const result = await fetcher.listReleasePoints();
+
+          if (!result.ok) {
+            console.error(`Fetch failed: ${result.error.message}`);
+            process.exit(1);
+          }
+
+          const points = result.value;
+          if (points.length === 0) {
+            console.log('No release points found');
+            process.exit(0);
+          }
+
+          const publicLaw = points[0]?.publicLaw ?? 'Unknown';
+          const titles = points.map(p => p.title).join(',');
+
+          // Write outputs for subsequent steps
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `has_changes=true\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `public_law=${publicLaw}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `titles=${titles}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `title_count=${points.length}\n`);
+
+          console.log(`Found ${points.length} release points for ${publicLaw}`);
+          SCRIPT
+
+      # Step 5: Exit gracefully if no changes
+      - name: Check for changes
+        if: steps.fetch.outputs.has_changes != 'true'
+        run: |
+          echo "## No Changes Detected" >> "$GITHUB_STEP_SUMMARY"
+          echo "OLRC release points are up to date. No new content to sync." >> "$GITHUB_STEP_SUMMARY"
+          echo "Run completed at: $(TZ='America/New_York' date)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Step 6: Run transformer on changed titles
+      - name: Transform statutes
+        if: steps.fetch.outputs.has_changes == 'true'
+        id: transform
+        run: |
+          mkdir -p workspace/statutes
+          node --input-type=module <<'SCRIPT'
+          import { OlrcFetcher, HashStore } from '@civic-source/fetcher';
+          import { XmlToMarkdownAdapter } from '@civic-source/transformer';
+          import { writeFile, mkdir } from 'node:fs/promises';
+          import { join, dirname } from 'node:path';
+
+          const fetcher = new OlrcFetcher({ hashStore: new HashStore() });
+          const result = await fetcher.listReleasePoints();
+          if (!result.ok) process.exit(1);
+
+          let totalSections = 0;
+          let failedTitles = 0;
+          const outputDir = 'workspace/statutes';
+
+          for (const rp of result.value) {
+            try {
+              const xmlResult = await fetcher.fetchXml(rp);
+              if (!xmlResult.ok) {
+                console.error(`Title ${rp.title}: fetch failed — ${xmlResult.error.message}`);
+                failedTitles++;
+                continue;
+              }
+              if (xmlResult.value === '') {
+                console.log(`Title ${rp.title}: unchanged, skipping`);
+                continue;
+              }
+
+              const transformer = new XmlToMarkdownAdapter(rp.publicLaw);
+              const transformResult = transformer.transformToFiles(xmlResult.value);
+              if (!transformResult.ok) {
+                console.error(`Title ${rp.title}: transform failed — ${transformResult.error.message}`);
+                failedTitles++;
+                continue;
+              }
+
+              for (const file of transformResult.value) {
+                const fullPath = join(outputDir, file.path);
+                await mkdir(dirname(fullPath), { recursive: true });
+                await writeFile(fullPath, file.content, 'utf-8');
+              }
+
+              totalSections += transformResult.value.length;
+              console.log(`Title ${rp.title}: ${transformResult.value.length} sections`);
+            } catch (e) {
+              console.error(`Title ${rp.title}: unexpected error — ${e}`);
+              failedTitles++;
+            }
+          }
+
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sections=${totalSections}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `failed_titles=${failedTitles}\n`);
+          console.log(`Transform complete: ${totalSections} sections, ${failedTitles} failures`);
+          SCRIPT
+
+      # Step 7: Checkout us-code data repo
+      - name: Checkout us-code data repo
+        if: steps.fetch.outputs.has_changes == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: civic-source/us-code
+          path: us-code
+          token: ${{ secrets.US_CODE_PAT || secrets.GITHUB_TOKEN }}
+
+      # Step 8: Copy transformed statutes to us-code repo
+      - name: Copy statutes to data repo
+        if: steps.fetch.outputs.has_changes == 'true'
+        run: |
+          cp -r workspace/statutes/* us-code/statutes/ 2>/dev/null || true
+          echo "Copied transformed statutes to us-code/statutes/"
+
+      # Step 9: Commit statutes (atomic — statutes only)
+      - name: Commit statutes
+        if: steps.fetch.outputs.has_changes == 'true'
+        id: commit_statutes
+        working-directory: us-code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add statutes/
+          if git diff --cached --quiet; then
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            echo "No statute changes to commit"
+          else
+            git commit -m "chore(law): Update to ${{ steps.fetch.outputs.public_law }}"
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Step 10: Run annotator on changed sections
+      - name: Annotate sections
+        if: steps.fetch.outputs.has_changes == 'true' && steps.commit_statutes.outputs.committed == 'true'
+        id: annotate
+        run: |
+          node --input-type=module <<'SCRIPT'
+          import { Annotator } from '@civic-source/annotator';
+          import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
+          import { join, dirname } from 'node:path';
+
+          const statutesDir = 'us-code/statutes';
+          const annotator = new Annotator();
+          let annotatedCount = 0;
+          let failedCount = 0;
+
+          // Walk statutes directory to find .md files and annotate them
+          async function walk(dir) {
+            let entries;
+            try {
+              entries = await readdir(dir, { withFileTypes: true });
+            } catch {
+              return;
+            }
+            for (const entry of entries) {
+              const fullPath = join(dir, entry.name);
+              if (entry.isDirectory()) {
+                await walk(fullPath);
+              } else if (entry.name.endsWith('.md') && !entry.name.endsWith('.annotations.md')) {
+                // Extract section ref from path pattern: title-N/.../section-N.md
+                const match = fullPath.match(/title-(\d+[a-zA-Z]?)\/.*\/section-(\d+[a-zA-Z-]*)\.md$/);
+                if (!match) continue;
+
+                const sectionRef = `${match[1]} U.S.C. ${match[2]}`;
+                try {
+                  const result = await annotator.annotateSection(sectionRef);
+                  if (result.ok) {
+                    const annotationPath = fullPath.replace(/\.md$/, '.annotations.json');
+                    await writeFile(annotationPath, JSON.stringify(result.value, null, 2) + '\n', 'utf-8');
+                    annotatedCount++;
+                  } else {
+                    console.warn(`Annotation failed for ${sectionRef}: ${result.error.message}`);
+                    failedCount++;
+                  }
+                } catch (e) {
+                  console.warn(`Annotation error for ${sectionRef}: ${e}`);
+                  failedCount++;
+                }
+              }
+            }
+          }
+
+          await walk(statutesDir);
+
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `annotated=${annotatedCount}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `annotation_failures=${failedCount}\n`);
+          console.log(`Annotation complete: ${annotatedCount} sections, ${failedCount} failures`);
+          SCRIPT
+
+      # Step 11: Commit annotations separately (atomic)
+      - name: Commit annotations
+        if: steps.fetch.outputs.has_changes == 'true' && steps.commit_statutes.outputs.committed == 'true'
+        id: commit_annotations
+        working-directory: us-code
+        run: |
+          git add '*.annotations.json'
+          if git diff --cached --quiet; then
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            echo "No annotation changes to commit"
+          else
+            git commit -m "chore(annotations): Sync precedent for ${{ steps.fetch.outputs.public_law }}"
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Step 12: Push to us-code repo
+      - name: Push to us-code
+        if: steps.fetch.outputs.has_changes == 'true' && steps.commit_statutes.outputs.committed == 'true'
+        working-directory: us-code
+        run: git push
+
+      # Step 13: Write job summary
+      - name: Write job summary
+        if: always()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## US Code Sync Summary
+
+          | Metric | Value |
+          |--------|-------|
+          | Public Law | ${{ steps.fetch.outputs.public_law || 'N/A' }} |
+          | Titles found | ${{ steps.fetch.outputs.title_count || '0' }} |
+          | Sections transformed | ${{ steps.transform.outputs.sections || '0' }} |
+          | Transform failures | ${{ steps.transform.outputs.failed_titles || '0' }} |
+          | Sections annotated | ${{ steps.annotate.outputs.annotated || '0' }} |
+          | Annotation failures | ${{ steps.annotate.outputs.annotation_failures || '0' }} |
+          | Statutes committed | ${{ steps.commit_statutes.outputs.committed || 'false' }} |
+          | Annotations committed | ${{ steps.commit_annotations.outputs.committed || 'false' }} |
+
+          **Titles:** ${{ steps.fetch.outputs.titles || 'none' }}
+
+          Run completed at: $(TZ='America/New_York' date)
+          EOF
