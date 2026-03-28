@@ -15,12 +15,15 @@
     "build": "tsc --project tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no linter configured yet'",
-    "test": "echo 'no tests yet'"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@openlaw-git/types": "workspace:*"
+    "@openlaw-git/types": "workspace:*",
+    "fast-xml-parser": "^5.5.9",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
   }
 }
