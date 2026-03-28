@@ -1,5 +1,5 @@
 {
-  "name": "@openlaw-git/fetcher",
+  "name": "@civic-source/fetcher",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -18,7 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@openlaw-git/types": "workspace:*"
+    "@civic-source/types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

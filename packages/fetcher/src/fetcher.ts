@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { type IUsCodeFetcher, type ReleasePoint, type Result, ok, err } from '@openlaw-git/types';
+import { type IUsCodeFetcher, type ReleasePoint, type Result, ok, err } from '@civic-source/types';
 import {
   OLRC_DOWNLOAD_PAGE,
   OLRC_RELEASE_POINTS_URL,

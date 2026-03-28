@@ -33,7 +33,7 @@ importers:
 
   packages/fetcher:
     dependencies:
-      '@openlaw-git/types':
+      '@civic-source/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
@@ -49,7 +49,7 @@ importers:
 
   packages/transformer:
     dependencies:
-      '@openlaw-git/types':
+      '@civic-source/types':
         specifier: workspace:*
         version: link:../types
       fast-xml-parser:

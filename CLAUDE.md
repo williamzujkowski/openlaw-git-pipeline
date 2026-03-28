@@ -37,10 +37,10 @@ correctness > simplicity > performance
 
 | Concern         | Package                   | Entry Point     |
 | --------------- | ------------------------- | --------------- |
-| Shared types    | `@openlaw-git/types`      | `src/index.ts`  |
-| OLRC fetcher    | `@openlaw-git/fetcher`    | `src/index.ts`  |
-| XML transformer | `@openlaw-git/transformer`| `src/index.ts`  |
-| Web app         | `@openlaw-git/web`        | `src/pages/`    |
+| Shared types    | `@civic-source/types`      | `src/index.ts`  |
+| OLRC fetcher    | `@civic-source/fetcher`    | `src/index.ts`  |
+| XML transformer | `@civic-source/transformer`| `src/index.ts`  |
+| Web app         | `@civic-source/web`        | `src/pages/`    |
 
 ## Self-Hosted Runner Policy
 

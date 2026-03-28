@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { OlrcFetcher, sha256, fetchWithRetry, parseReleasePoints } from '../fetcher.js';
 import { HashStore } from '../hash-store.js';
 import { createLogger } from '../logger.js';
-import type { ReleasePoint } from '@openlaw-git/types';
+import type { ReleasePoint } from '@civic-source/types';
 
 // --- sha256 ---
 

@@ -1,5 +1,5 @@
 {
-  "name": "@openlaw-git/transformer",
+  "name": "@civic-source/transformer",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -18,7 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@openlaw-git/types": "workspace:*",
+    "@civic-source/types": "workspace:*",
     "fast-xml-parser": "^5.5.9",
     "zod": "^3.24.0"
   },

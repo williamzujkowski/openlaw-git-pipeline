@@ -4,13 +4,13 @@ Automated pipeline that fetches the Office of the Law Revision Counsel (OLRC) US
 
 ## Packages
 
-- `@openlaw-git/types` — Shared TypeScript types, Zod schemas, and interfaces
-- `@openlaw-git/fetcher` — OLRC release point fetcher
-- `@openlaw-git/transformer` — XML-to-Markdown converter
+- `@civic-source/types` — Shared TypeScript types, Zod schemas, and interfaces
+- `@civic-source/fetcher` — OLRC release point fetcher
+- `@civic-source/transformer` — XML-to-Markdown converter
 
 ## Apps
 
-- `@openlaw-git/web` — Astro site for browsing US Code changes
+- `@civic-source/web` — Astro site for browsing US Code changes
 
 ## Development
 

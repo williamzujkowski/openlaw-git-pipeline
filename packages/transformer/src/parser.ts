@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
-import { ok, err } from '@openlaw-git/types';
-import type { Result } from '@openlaw-git/types';
+import { ok, err } from '@civic-source/types';
+import type { Result } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
 import { createLogger } from './logger.js';
 
