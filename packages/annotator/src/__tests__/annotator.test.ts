@@ -84,9 +84,10 @@ describe('Annotator', () => {
     expect(firstCase?.caseName).toBe('Doe v. United States');
     expect(firstCase?.citation).toBe('123 U.S. 456');
     expect(firstCase?.court).toBe('SCOTUS');
-    expect(firstCase?.url).toBe(
+    expect(firstCase?.sourceUrl).toBe(
       'https://www.courtlistener.com/opinion/12345/doe-v-united-states/'
     );
+    expect(firstCase?.impact).toBe('interpretation');
   });
 
   it('returns valid empty annotation for no results', async () => {
@@ -104,9 +105,9 @@ describe('Annotator', () => {
 
   it('sorts results by court priority: SCOTUS > Appellate > District', async () => {
     const results = [
-      fakeResult({ court: 'paed', caseName: 'District Case' }),
-      fakeResult({ court: 'scotus', caseName: 'SCOTUS Case' }),
-      fakeResult({ court: 'ca3', caseName: 'Appellate Case' }),
+      fakeResult({ court: 'paed', caseName: 'District Case', citation: ['300 F.Supp. 100'] }),
+      fakeResult({ court: 'scotus', caseName: 'SCOTUS Case', citation: ['500 U.S. 200'] }),
+      fakeResult({ court: 'ca3', caseName: 'Appellate Case', citation: ['400 F.3d 300'] }),
     ];
     const client = makeClient(results);
     const annotator = new Annotator({ client, logger });
@@ -120,7 +121,7 @@ describe('Annotator', () => {
     expect(result.value.annotation.cases[2]?.caseName).toBe('District Case');
   });
 
-  it('truncates snippet to 500 chars for holdingSummary', async () => {
+  it('truncates snippet to fit within 500 chars for holdingSummary', async () => {
     const longSnippet = 'x'.repeat(600);
     const client = makeClient([fakeResult({ snippet: longSnippet })]);
     const annotator = new Annotator({ client, logger });
@@ -129,8 +130,9 @@ describe('Annotator', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.annotation.cases[0]?.holdingSummary).toHaveLength(503); // 500 + '...'
-    expect(result.value.annotation.cases[0]?.holdingSummary.endsWith('...')).toBe(true);
+    const summary = result.value.annotation.cases[0]?.holdingSummary ?? '';
+    expect(summary.length).toBeLessThanOrEqual(500);
+    expect(summary.endsWith('...')).toBe(true);
   });
 
   it('uses first citation when multiple are available', async () => {
@@ -178,6 +180,22 @@ describe('Annotator', () => {
     if (!result.ok) return;
     const validation = PrecedentAnnotationSchema.safeParse(result.value.annotation);
     expect(validation.success).toBe(true);
+  });
+
+  it('deduplicates cases with matching normalized citations', async () => {
+    const results = [
+      fakeResult({ caseName: 'Case A', citation: ['18 U.S.C. 111'] }),
+      fakeResult({ caseName: 'Case B', citation: ['18 U.S.C. 111'] }),
+    ];
+    const client = makeClient(results);
+    const annotator = new Annotator({ client, logger });
+
+    const result = await annotator.annotateSection('18 U.S.C. 111');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.annotation.cases).toHaveLength(1);
+    expect(result.value.annotation.cases[0]?.caseName).toBe('Case A');
   });
 });
 
@@ -294,7 +312,7 @@ describe('buildAnnotationPath', () => {
 });
 
 describe('annotationToYaml', () => {
-  it('serializes annotation to YAML format', () => {
+  it('serializes annotation to YAML format with sourceUrl and impact', () => {
     const yaml = annotationToYaml({
       targetSection: '18 U.S.C. 111',
       lastSyncedET: '2025-06-15T12:00:00.000Z',
@@ -304,13 +322,17 @@ describe('annotationToYaml', () => {
         court: 'SCOTUS',
         date: '2024-01-15',
         holdingSummary: 'The court held broadly.',
-        url: 'https://www.courtlistener.com/opinion/12345/',
+        sourceUrl: 'https://www.courtlistener.com/opinion/12345/',
+        impact: 'interpretation',
       }],
     });
     expect(yaml).toContain('targetSection: "18 U.S.C. 111"');
     expect(yaml).toContain('cases:');
     expect(yaml).toContain('  - caseName: "Doe v. United States"');
     expect(yaml).toContain('    court: "SCOTUS"');
+    expect(yaml).toContain('    sourceUrl: "https://www.courtlistener.com/opinion/12345/"');
+    expect(yaml).toContain('    impact: "interpretation"');
+    expect(yaml).not.toContain('    url:');
     expect(yaml.endsWith('\n')).toBe(true);
   });
 
@@ -324,7 +346,8 @@ describe('annotationToYaml', () => {
         court: 'District',
         date: '2024-01-01',
         holdingSummary: 'Summary with "quotes"',
-        url: 'https://example.com',
+        sourceUrl: 'https://example.com',
+        impact: 'historical',
       }],
     });
     expect(yaml).toContain('caseName: "Case with \\"quotes\\""');

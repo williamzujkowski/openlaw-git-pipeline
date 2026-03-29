@@ -1,5 +1,5 @@
 import { type Result, ok, err } from '@civic-source/types';
-import { type Logger, MAX_RETRIES, BASE_BACKOFF_MS } from '@civic-source/shared';
+import { type Logger, MAX_RETRIES, BASE_BACKOFF_MS, TokenBucket } from '@civic-source/shared';
 import {
   COURTLISTENER_BASE_URL,
   SEARCH_ENDPOINT,
@@ -23,12 +23,6 @@ interface SearchResponse {
   results: CourtListenerResult[];
 }
 
-/** Tracks request count for rate limit awareness */
-interface RateLimitTracker {
-  count: number;
-  windowStart: number;
-}
-
 /** Validate that an unknown value has the expected SearchResponse shape */
 function isSearchResponse(data: unknown): data is SearchResponse {
   if (typeof data !== 'object' || data === null) return false;
@@ -41,7 +35,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * CourtListener API client with retry logic and rate limit tracking.
+ * CourtListener API client with retry logic and token bucket rate limiting.
  *
  * Note: Statute citations are not indexed as structured fields in CourtListener.
  * We use full-text search (e.g., q="18 U.S.C. 111"), so coverage is approximate.
@@ -50,12 +44,17 @@ export class CourtListenerClient {
   private readonly token: string;
   private readonly logger: Logger;
   private readonly pageSize: number;
-  private readonly tracker: RateLimitTracker = { count: 0, windowStart: Date.now() };
+  private readonly rateLimiter: TokenBucket;
 
-  constructor(options: { token: string; logger: Logger; pageSize?: number }) {
+  constructor(options: { token: string; logger: Logger; pageSize?: number; rateLimiter?: TokenBucket }) {
     this.token = options.token;
     this.logger = options.logger;
     this.pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+    this.rateLimiter = options.rateLimiter ?? new TokenBucket({
+      capacity: RATE_LIMIT_PER_HOUR,
+      refillRate: Math.ceil(RATE_LIMIT_PER_HOUR / 3600),
+      refillIntervalMs: 1000,
+    });
   }
 
   /**
@@ -63,7 +62,10 @@ export class CourtListenerClient {
    * Uses full-text search since statute citations are not structured fields.
    */
   async searchByStatute(section: string): Promise<Result<CourtListenerResult[]>> {
-    await this.checkRateLimit();
+    if (!this.rateLimiter.tryConsume()) {
+      this.logger.warn('Rate limited, waiting for token', { section });
+      await this.rateLimiter.waitAndConsume();
+    }
 
     const url = new URL(SEARCH_ENDPOINT, COURTLISTENER_BASE_URL);
     url.searchParams.set('q', `"${section}"`);
@@ -83,31 +85,10 @@ export class CourtListenerClient {
     return ok(data.results);
   }
 
-  /** Check rate limit and pause if approaching the threshold */
-  private async checkRateLimit(): Promise<void> {
-    const now = Date.now();
-    const hourMs = 60 * 60 * 1000;
-
-    if (now - this.tracker.windowStart > hourMs) {
-      this.tracker.count = 0;
-      this.tracker.windowStart = now;
-    }
-
-    // Pause if we're at 90% of the rate limit
-    if (this.tracker.count >= RATE_LIMIT_PER_HOUR * 0.9) {
-      const waitMs = hourMs - (now - this.tracker.windowStart);
-      this.logger.warn('Approaching rate limit, pausing', { waitMs, count: this.tracker.count });
-      await sleep(waitMs);
-      this.tracker.count = 0;
-      this.tracker.windowStart = Date.now();
-    }
-  }
-
   /** Fetch with exponential backoff retry, including 429 handling */
   private async fetchWithRetry(url: string): Promise<Result<unknown>> {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        this.tracker.count++;
         const response = await fetch(url, {
           headers: { Authorization: `Token ${this.token}` },
         });

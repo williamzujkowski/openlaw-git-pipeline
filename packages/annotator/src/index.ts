@@ -13,4 +13,5 @@ export { TIMEZONE, MAX_RETRIES, BASE_BACKOFF_MS } from '@civic-source/shared';
 
 export { CourtListenerClient, type CourtListenerResult } from './client.js';
 export { Annotator, mapCourt, buildAnnotationPath, annotationToYaml, type AnnotationResult } from './annotator.js';
+export { normalizeCitation, deduplicateCases } from './citation-utils.js';
 export { createLogger, type Logger, type LogLevel } from '@civic-source/shared';

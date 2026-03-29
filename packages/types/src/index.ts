@@ -33,17 +33,30 @@ export type ReleasePoint = z.infer<typeof ReleasePointSchema>;
 
 // --- Precedent Annotation schema ---
 
+/** Impact classification for how a case affects the statute */
+export const PrecedentImpactSchema = z.enum([
+  'interpretation',
+  'unconstitutional',
+  'narrowed',
+  'historical',
+]);
+
+export type PrecedentImpact = z.infer<typeof PrecedentImpactSchema>;
+
+export const CaseAnnotationSchema = z.object({
+  caseName: z.string(),
+  citation: z.string(),
+  court: z.enum(["SCOTUS", "Appellate", "District"]),
+  date: z.string(),
+  holdingSummary: z.string().max(500),
+  sourceUrl: z.string().url(),
+  impact: PrecedentImpactSchema,
+});
+
 export const PrecedentAnnotationSchema = z.object({
   targetSection: z.string(),
   lastSyncedET: z.string().datetime(),
-  cases: z.array(z.object({
-    caseName: z.string(),
-    citation: z.string(),
-    court: z.enum(["SCOTUS", "Appellate", "District"]),
-    date: z.string(),
-    holdingSummary: z.string(),
-    url: z.string().url()
-  }))
+  cases: z.array(CaseAnnotationSchema),
 });
 
 export type PrecedentAnnotation = z.infer<typeof PrecedentAnnotationSchema>;

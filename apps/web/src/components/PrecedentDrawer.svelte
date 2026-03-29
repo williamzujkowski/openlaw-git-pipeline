@@ -14,6 +14,13 @@
     District: 'text-slate dark:text-gray-400',
   };
 
+  const IMPACT_COLORS: Record<CaseAnnotation['impact'], string> = {
+    interpretation: 'bg-teal/10 text-teal dark:bg-teal/20 dark:text-teal-bright',
+    unconstitutional: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    narrowed: 'bg-amber/10 text-amber dark:bg-amber/20 dark:text-amber',
+    historical: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  };
+
   let { sectionId, annotations }: Props = $props();
   let open = $state(false);
   let expandedHoldings = $state<Set<number>>(new Set());
@@ -78,13 +85,16 @@
             {@const globalIdx = annotations.indexOf(c)}
             <li class="rounded border border-gray-100 p-3 dark:border-gray-700">
               <a
-                href={c.url}
+                href={c.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-sm font-medium text-teal underline-offset-2 hover:underline dark:text-teal-bright"
               >{c.caseName}</a>
-              <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {c.citation} · {c.court} · {c.date}
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>{c.citation} · {c.court} · {c.date}</span>
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium {IMPACT_COLORS[c.impact]}">
+                  {c.impact}
+                </span>
               </div>
               <p class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
                 class:line-clamp-2={!expandedHoldings.has(globalIdx)}
