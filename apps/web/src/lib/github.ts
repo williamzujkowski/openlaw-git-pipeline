@@ -133,8 +133,18 @@ export function formatTagName(tag: string): string {
   return tag.replace(/^pl-/, "PL ").replace(/-/g, "-");
 }
 
-/** Extract year from an ISO date string */
-export function extractYear(date: string): string {
+/** Extract year from a tag name (congress number) or fall back to ISO date string */
+export function extractYear(date: string, tagName?: string): string {
+  // Derive from congress number in tag name: pl-113-* → 2013-2014
+  if (tagName) {
+    const match = tagName.match(/pl-(\d+)-/);
+    if (match) {
+      const congress = parseInt(match[1]);
+      // Congress starts in odd year: 113th = 2013-2014, 114th = 2015-2016, etc.
+      const startYear = 2013 + (congress - 113) * 2;
+      return `${startYear}`;
+    }
+  }
   if (!date) return "";
   return new Date(date).getFullYear().toString();
 }

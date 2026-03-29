@@ -28,8 +28,7 @@
   let error = $state("");
   let compareFrom = $state("");
   let compareTo = $state("");
-  let selectedTagContent = $state("");
-  let selectedTag = $state("");
+  let selectedTagContent = $state(""); let selectedTag = $state(""); let hasCompared = $state(false);
 
   function cleanMarkdownForDisplay(raw: string): string {
     return raw
@@ -48,7 +47,9 @@
         getFileHistory(repoOwner, repoName, sectionPath, githubToken),
         getReleaseTags(repoOwner, repoName, githubToken),
       ]);
-      commits = commitResult;
+      // Deduplicate commits by message
+      const seen = new Set<string>();
+      commits = commitResult.filter(c => !seen.has(c.message) && seen.add(c.message));
       tags = tagResult;
       if (tags.length > 0) {
         compareTo = tags[tags.length - 1].name;
@@ -74,6 +75,7 @@
         path: sectionPath, token: githubToken,
       });
       diffLines = result ?? [];
+      hasCompared = true;
     } catch (e: unknown) {
       error = isRateLimited(e)
         ? "GitHub API rate limit reached. Try again later or provide a token."
@@ -108,6 +110,12 @@
     return /Update to (?:PL |Public Law )/i.test(msg);
   }
 
+  function commitDisplayDate(msg: string, gitDate: string): string {
+    const m = msg.match(/(\d{3})-(\d+)/);
+    if (m) return `${2013 + (parseInt(m[1]) - 113) * 2}`;
+    return gitDate ? new Date(gitDate).toLocaleDateString() : '';
+  }
+
   $effect(() => { void loadHistory(); });
 </script>
 
@@ -131,8 +139,8 @@
             <span class="mt-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium {selectedTag === tag.name
               ? 'bg-amber/15 text-amber-700 dark:text-amber-300'
               : 'bg-teal/10 text-teal-700 dark:text-teal-300'}">{formatTagName(tag.name)}</span>
-            {#if extractYear(tag.date)}
-              <span class="text-[9px] text-gray-400">{extractYear(tag.date)}</span>
+            {#if extractYear(tag.date, tag.name)}
+              <span class="text-[9px] text-gray-400">{extractYear(tag.date, tag.name)}</span>
             {/if}
           </button>
         {/each}
@@ -175,6 +183,8 @@
   : line.type === 'del'
     ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
     : 'text-gray-600 dark:text-gray-400'} block">{line.content}</span>{/each}</pre>
+      {:else if hasCompared && !diffLoading && compareFrom && compareTo && compareFrom !== compareTo}
+        <p class="mb-4 rounded bg-gray-100 p-3 text-xs text-gray-500 dark:bg-gray-800">No changes between {formatTagName(compareFrom)} and {formatTagName(compareTo)} for this section.</p>
       {/if}
     {/if}
 
@@ -191,7 +201,7 @@
         {#each commits as commit (commit.sha)}
           <li class="rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-300">
             <span>{formatCommitMessage(commit.message)}</span>
-            <span class="ml-2 text-gray-400">{commit.date ? new Date(commit.date).toLocaleDateString() : ""}</span>
+            <span class="ml-2 text-gray-400">{commitDisplayDate(commit.message, commit.date)}</span>
           </li>
         {/each}
       </ul>
