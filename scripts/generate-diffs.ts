@@ -56,7 +56,10 @@ function getRawDiff(repo: string, from: string, to: string): string {
     return execSync(`git diff --unified=3 "${from}".."${to}" -- statutes/`, {
       cwd: repo, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024,
     });
-  } catch { return ''; }
+  } catch (e) {
+    console.warn(`  Warning: git diff failed for ${from}..${to}: ${e instanceof Error ? e.message : 'unknown'}`);
+    return '';
+  }
 }
 
 /** Check if a diff line is a frontmatter noise change */

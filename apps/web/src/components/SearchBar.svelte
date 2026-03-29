@@ -31,11 +31,19 @@
   let devMode = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // Load Pagefind on mount
+  // Load Pagefind on mount + register "/" shortcut
   $effect(() => {
     loadPagefind();
+    function onGlobalKeydown(e: KeyboardEvent): void {
+      if (e.key === '/' && !devMode && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+      }
+    }
+    document.addEventListener('keydown', onGlobalKeydown);
     return () => {
       if (debounceTimer !== undefined) clearTimeout(debounceTimer);
+      document.removeEventListener('keydown', onGlobalKeydown);
     };
   });
 
@@ -136,7 +144,7 @@
     <input
       id="search-input"
       type="search"
-      placeholder={devMode ? 'Search available in production build' : 'Search...'}
+      placeholder={devMode ? 'Search available in production build' : 'Search (press /)'}
       disabled={devMode}
       bind:value={query}
       onfocusin={() => { if (query.length > 0) showResults = true; }}
@@ -146,6 +154,8 @@
       aria-expanded={showResults}
       aria-controls="search-results"
       aria-activedescendant={activeIndex >= 0 ? `result-${activeIndex}` : undefined}
+      aria-autocomplete="list"
+      aria-haspopup="listbox"
       class="w-full rounded border border-gray-300 bg-white py-1 pl-8 pr-2 text-xs text-gray-900 placeholder-gray-400 focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-600 lg:w-48"
     />
   </div>

@@ -33,7 +33,7 @@
   margin-bottom: 1.25em;
 }
 
-/* Heading hierarchy — clear distinction */
+/* Heading hierarchy — clear distinction, balanced line wrapping */
 .prose h1 {
   font-size: 2em;
   font-weight: 700;
@@ -41,6 +41,7 @@
   margin-bottom: 0.75em;
   font-variant-numeric: oldstyle-nums;
   font-feature-settings: "case" 1;
+  text-wrap: balance;
 }
 
 .prose h2 {
@@ -48,6 +49,7 @@
   font-weight: 600;
   margin-top: 1.75em;
   margin-bottom: 0.5em;
+  text-wrap: balance;
 }
 
 .prose h3 {
@@ -55,6 +57,7 @@
   font-weight: 600;
   margin-top: 1.5em;
   margin-bottom: 0.5em;
+  text-wrap: balance;
 }
 
 /* Nested list styling improvements — visible in both light and dark mode */
@@ -117,9 +120,20 @@
   border-color: var(--color-gray-700, #334155);
 }
 
-/* Print styles */
+/* Mobile prose — tighter width on smaller screens */
+@media (max-width: 768px) {
+  .prose {
+    max-width: min(90vw, 65ch);
+  }
+}
+
+/* Print styles — page breaks, clean layout */
 @media print {
   aside, footer, nav, .not-prose { display: none !important; }
   main { width: 100% !important; }
-  .prose { max-width: none !important; font-size: 11pt !important; }
+  .prose { max-width: none !important; font-size: 11pt !important; line-height: 1.6; }
+  .prose h1, .prose h2, .prose h3 { break-after: avoid; }
+  .prose li, .prose p { break-inside: avoid; }
+  .prose ul { break-inside: auto; }
+  a[href]::after { content: none !important; }
 }
