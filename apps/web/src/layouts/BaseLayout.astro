@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import ThemeToggle from '../components/ThemeToggle.svelte';
 import SearchBar from '../components/SearchBar.svelte';
+import { TITLE_NAMES } from '../data/title-names';
 
 interface Props {
   title?: string;
@@ -14,6 +15,16 @@ const {
 } = Astro.props;
 
 const base = import.meta.env.BASE_URL;
+
+// Determine the current title number from the URL for highlighting
+const pathname = Astro.url.pathname;
+const titleMatch = pathname.match(/\/browse\/title-(\d+)/);
+const currentTitleNum = titleMatch ? Number(titleMatch[1]) : null;
+
+// Build sorted title entries
+const titleEntries = Object.entries(TITLE_NAMES)
+  .map(([num, name]) => ({ num: Number(num), name }))
+  .sort((a, b) => a.num - b.num);
 ---
 
 <!doctype html>
@@ -41,7 +52,7 @@ const base = import.meta.env.BASE_URL;
     </a>
     <div class="flex h-full flex-col lg:flex-row">
       <!-- Sidebar -->
-      <aside class="w-full border-b border-gray-200 bg-gray-50 font-sans lg:w-64 lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-gray-900">
+      <aside class="w-full border-b border-gray-200 bg-gray-50 font-sans lg:w-64 lg:flex-shrink-0 lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-gray-900 lg:flex lg:flex-col lg:h-full">
         <div class="flex items-center justify-between p-4 lg:flex-col lg:items-start lg:gap-4">
           <a href={base} class="text-lg font-bold text-navy dark:text-amber">
             US Code Tracker
@@ -54,31 +65,36 @@ const base = import.meta.env.BASE_URL;
         </div>
         <button
           id="menu-toggle"
-          class="rounded border border-gray-300 px-2 py-1 text-xs font-sans lg:hidden dark:border-gray-700"
+          class="mx-4 mb-2 rounded border border-gray-300 px-2 py-1 text-xs font-sans lg:hidden dark:border-gray-700"
           aria-expanded="false"
           aria-controls="main-nav"
           aria-label="Open menu"
         >
           Menu
         </button>
-        <nav id="main-nav" class="hidden px-4 pb-4 font-sans lg:block" aria-label="Main navigation">
-          <ul class="space-y-1 text-sm">
-            <li>
-              <a
-                href={base}
-                class="block rounded px-2 py-1 text-slate hover:bg-gray-200 hover:text-navy dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-amber"
-              >
-                Home
-              </a>
-            </li>
-            <li>
-              <a
-                href={`${base}browse/`}
-                class="block rounded px-2 py-1 text-slate hover:bg-gray-200 hover:text-navy dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-amber"
-              >
-                Browse Titles
-              </a>
-            </li>
+        <nav id="main-nav" class="hidden px-4 pb-4 font-sans lg:flex lg:min-h-0 lg:flex-1 lg:flex-col" aria-label="Main navigation">
+          <label for="title-filter" class="sr-only">Filter titles</label>
+          <input
+            type="text"
+            id="title-filter"
+            placeholder="Filter titles…"
+            autocomplete="off"
+            class="mb-2 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 placeholder-gray-400 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-amber dark:focus:ring-amber"
+          />
+          <ul id="title-list" class="space-y-0.5 overflow-y-auto text-sm lg:max-h-[calc(100vh-280px)]">
+            {titleEntries.map(({ num, name }) => {
+              const isActive = currentTitleNum === num;
+              const linkClass = isActive
+                ? 'block rounded px-2 py-1 bg-navy/10 font-semibold text-navy dark:bg-amber/10 dark:text-amber'
+                : 'block rounded px-2 py-1 text-slate hover:bg-gray-200 hover:text-navy dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-amber';
+              return (
+                <li data-title-num={num} data-title-name={name.toLowerCase()}>
+                  <a href={`${base}browse/title-${num}/`} class={linkClass} aria-current={isActive ? 'page' : undefined}>
+                    {num} &mdash; {name}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       </aside>
@@ -90,21 +106,50 @@ const base = import.meta.env.BASE_URL;
         </article>
 
         <!-- Footer -->
-        <footer class="border-t border-gray-200 px-6 py-4 text-center font-sans text-xs text-slate dark:border-gray-800 dark:text-gray-500">
-          <p>
-            This is an independent project and is not affiliated with, endorsed by, or
-            connected to the United States Government, the Office of the Law Revision
-            Counsel, or any government agency.
-          </p>
-          <p class="mt-1">
-            Source data from <a href="https://uscode.house.gov/" class="underline hover:text-teal">uscode.house.gov</a>.
-            Built with Astro.
-          </p>
+        <footer class="border-t border-gray-200 px-6 py-8 font-sans text-sm text-slate dark:border-gray-800 dark:text-gray-400">
+          <div class="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
+            <div>
+              <h2 class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">About</h2>
+              <p class="text-xs leading-relaxed">
+                Independent civic tech project tracking changes to U.S. federal law.
+              </p>
+              <p class="mt-1 text-xs leading-relaxed">
+                Not affiliated with any government agency.
+              </p>
+            </div>
+            <div>
+              <h2 class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">Resources</h2>
+              <ul class="space-y-1 text-xs">
+                <li>
+                  <a href="https://uscode.house.gov/" class="underline hover:text-teal" rel="noopener noreferrer">
+                    Official U.S. Code (OLRC)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/civic-source/us-code" class="underline hover:text-teal" rel="noopener noreferrer">
+                    Source Data (GitHub)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/civic-source/us-code-tracker" class="underline hover:text-teal" rel="noopener noreferrer">
+                    Pipeline Code (GitHub)
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">Legal</h2>
+              <p class="text-xs leading-relaxed">Code: Apache 2.0 License</p>
+              <p class="mt-1 text-xs leading-relaxed">Data: CC0 Public Domain</p>
+              <p class="mt-1 text-xs leading-relaxed">Current through PL 119-73</p>
+            </div>
+          </div>
         </footer>
       </main>
     </div>
     <script is:inline>
       (function () {
+        // Mobile menu toggle
         var btn = document.getElementById('menu-toggle');
         var nav = document.getElementById('main-nav');
         if (!btn || !nav) return;
@@ -113,6 +158,22 @@ const base = import.meta.env.BASE_URL;
           btn.setAttribute('aria-expanded', String(!expanded));
           btn.setAttribute('aria-label', expanded ? 'Open menu' : 'Close menu');
           nav.classList.toggle('hidden', expanded);
+        });
+
+        // Title filter
+        var filter = document.getElementById('title-filter');
+        var list = document.getElementById('title-list');
+        if (!filter || !list) return;
+        var items = list.querySelectorAll('li');
+        filter.addEventListener('input', function () {
+          var query = filter.value.toLowerCase().trim();
+          for (var i = 0; i < items.length; i++) {
+            var li = items[i];
+            var num = li.getAttribute('data-title-num') || '';
+            var name = li.getAttribute('data-title-name') || '';
+            var match = !query || num.indexOf(query) !== -1 || name.indexOf(query) !== -1;
+            li.style.display = match ? '' : 'none';
+          }
         });
       })();
     </script>

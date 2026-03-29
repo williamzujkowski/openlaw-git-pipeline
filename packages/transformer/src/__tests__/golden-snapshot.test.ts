@@ -49,14 +49,14 @@ describe('Title 18 golden snapshot', () => {
     const content = result.value[0]!.content;
     // Section heading
     expect(content).toContain('# 1 Offenses classified');
-    // (a) at depth 0 — no indent
-    expect(content).toMatch(/^\(a\) Notwithstanding any Act of Congress to the contrary:/m);
-    // (1) at depth 1 — 2 spaces
-    expect(content).toMatch(/^ {2}\(1\) Any offense punishable by death/m);
-    // (2) at depth 1 — 2 spaces
-    expect(content).toMatch(/^ {2}\(2\) Any other offense is a misdemeanor\./m);
-    // (b) at depth 0 — no indent
-    expect(content).toMatch(/^\(b\) An offense that is not specifically classified/m);
+    // (a) at depth 0 — markdown list with bold marker
+    expect(content).toMatch(/^- \*\*\(a\)\*\* Notwithstanding any Act of Congress to the contrary:/m);
+    // (1) at depth 1 — 2 spaces + list marker
+    expect(content).toMatch(/^ {2}- \*\*\(1\)\*\* Any offense punishable by death/m);
+    // (2) at depth 1 — 2 spaces + list marker
+    expect(content).toMatch(/^ {2}- \*\*\(2\)\*\* Any other offense is a misdemeanor\./m);
+    // (b) at depth 0 — markdown list with bold marker
+    expect(content).toMatch(/^- \*\*\(b\)\*\* An offense that is not specifically classified/m);
   });
 
   it('preserves cross-reference text in mixed content', () => {
@@ -77,8 +77,8 @@ describe('Title 18 golden snapshot', () => {
 
     const content = result.value[1]!.content;
     expect(content).toContain('# 2 Principals');
-    expect(content).toContain('(a) Whoever commits an offense against the United States');
-    expect(content).toContain('(b) Whoever willfully causes an act to be done');
+    expect(content).toContain('- **(a)** Whoever commits an offense against the United States');
+    expect(content).toContain('- **(b)** Whoever willfully causes an act to be done');
   });
 
   it('snapshot: section 1 body matches expected markdown structure', () => {
@@ -94,10 +94,10 @@ describe('Title 18 golden snapshot', () => {
     expect(body).toMatchInlineSnapshot(`
       "# 1 Offenses classified
 
-      (a) Notwithstanding any Act of Congress to the contrary:
-        (1) Any offense punishable by death or imprisonment for a term exceeding one year is a felony.
-        (2) Any other offense is a misdemeanor.
-      (b) An offense that is not specifically classified by a letter grade in the section defining it, as provided in section 3559 of this title, is classified as determined by this section."
+      - **(a)** Notwithstanding any Act of Congress to the contrary:
+        - **(1)** Any offense punishable by death or imprisonment for a term exceeding one year is a felony.
+        - **(2)** Any other offense is a misdemeanor.
+      - **(b)** An offense that is not specifically classified by a letter grade in the section defining it, as provided in section 3559 of this title, is classified as determined by this section."
     `);
   });
 });

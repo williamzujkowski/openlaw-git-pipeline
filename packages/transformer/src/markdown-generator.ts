@@ -45,10 +45,11 @@ export function generateFrontmatter(data: Frontmatter): string {
   return lines.join('\n');
 }
 
-/** Format a legal list item with proper indentation based on depth */
+/** Format a legal list item as a markdown unordered list entry with bold marker */
 export function formatListItem(marker: string, text: string, depth: number): string {
   const indent = ' '.repeat(Math.min(depth, MAX_NESTING_DEPTH) * INDENT_PER_LEVEL);
-  return `${indent}${marker} ${text}`;
+  const boldMarker = marker ? `**${marker}**` : '';
+  return `${indent}- ${boldMarker}${text ? ' ' + text : ''}`;
 }
 
 /**

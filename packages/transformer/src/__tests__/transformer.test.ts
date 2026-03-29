@@ -239,14 +239,14 @@ describe('buildSectionPath', () => {
 });
 
 describe('formatListItem', () => {
-  it('formats top-level item with no indent', () => {
-    expect(formatListItem('(a)', 'First item', 0)).toBe('(a) First item');
+  it('formats top-level item as markdown list with bold marker', () => {
+    expect(formatListItem('(a)', 'First item', 0)).toBe('- **(a)** First item');
   });
 
   it('indents by 2 spaces per depth level', () => {
-    expect(formatListItem('(1)', 'Sub item', 1)).toBe('  (1) Sub item');
-    expect(formatListItem('(A)', 'Sub sub', 2)).toBe('    (A) Sub sub');
-    expect(formatListItem('(i)', 'Deep', 3)).toBe('      (i) Deep');
+    expect(formatListItem('(1)', 'Sub item', 1)).toBe('  - **(1)** Sub item');
+    expect(formatListItem('(A)', 'Sub sub', 2)).toBe('    - **(A)** Sub sub');
+    expect(formatListItem('(i)', 'Deep', 3)).toBe('      - **(i)** Deep');
   });
 });
 
@@ -285,8 +285,8 @@ describe('generateSectionBody', () => {
     ];
     const body = generateSectionBody(sectionChildren);
     expect(body).toContain('# 101 Test heading');
-    expect(body).toContain('(a) Top level text');
-    expect(body).toContain('  (1) Nested text');
+    expect(body).toContain('- **(a)** Top level text');
+    expect(body).toContain('  - **(1)** Nested text');
   });
 });
 
@@ -343,14 +343,14 @@ describe('XmlToMarkdownAdapter', () => {
     const result = adapter.transform(MINIMAL_SECTION_XML);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // (a) at depth 0 (subsection)
-    expect(result.value).toContain('(a)');
-    // (1) at depth 1 (paragraph) — 2 spaces
-    expect(result.value).toMatch(/^ {2}\(1\)/m);
-    // (A) at depth 2 (subparagraph) — 4 spaces
-    expect(result.value).toMatch(/^ {4}\(A\)/m);
-    // (i) at depth 3 (clause) — 6 spaces
-    expect(result.value).toMatch(/^ {6}\(i\)/m);
+    // (a) at depth 0 (subsection) — markdown list with bold marker
+    expect(result.value).toContain('- **(a)**');
+    // (1) at depth 1 (paragraph) — 2 spaces + list marker
+    expect(result.value).toMatch(/^ {2}- \*\*\(1\)\*\*/m);
+    // (A) at depth 2 (subparagraph) — 4 spaces + list marker
+    expect(result.value).toMatch(/^ {4}- \*\*\(A\)\*\*/m);
+    // (i) at depth 3 (clause) — 6 spaces + list marker
+    expect(result.value).toMatch(/^ {6}- \*\*\(i\)\*\*/m);
   });
 
   it('handles deeply nested US Code titles (subtitle>part>chapter>subchapter>section)', () => {
@@ -402,6 +402,6 @@ describe('XmlToMarkdownAdapter', () => {
     if (!result.ok) return;
     // With preserveOrder, inline ref text is preserved in position
     expect(result.value).toContain('section 111');
-    expect(result.value).toMatch(/described in.*section 111.*of this title/);
+    expect(result.value).toMatch(/described in.*section 111.*of this title shall be fined/);
   });
 });
