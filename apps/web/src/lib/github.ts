@@ -88,7 +88,7 @@ export async function getReleaseTags(
 
   const parseTag = (name: string): [number, number] => {
     const m = /pl-(\d+)-(\d+)/.exec(name);
-    return m ? [parseInt(m[1], 10), parseInt(m[2], 10)] : [0, 0];
+    return m && m[1] && m[2] ? [parseInt(m[1], 10), parseInt(m[2], 10)] : [0, 0];
   };
 
   return response.data
@@ -122,9 +122,36 @@ export async function getFileAtRef(
   }
 }
 
-/** Strip HTML tags from content to prevent XSS */
+/**
+ * Strip HTML tags and dangerous content to prevent XSS.
+ * Handles: tags, encoded entities, script/style blocks, event handlers.
+ * For untrusted content only — trusted Astro/Svelte output doesn't need this.
+ */
 export function sanitizeContent(raw: string): string {
-  return raw.replace(/<[^>]*>/g, "");
+  return raw
+    // Remove script/style blocks entirely (including content)
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    // Remove HTML comments (can contain instructions/hidden content)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // Remove all HTML tags
+    .replace(/<[^>]*>/g, "")
+    // Decode common HTML entities
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'").replace(/&#x2F;/g, "/")
+    // Re-strip any tags that were hiding inside encoded entities
+    .replace(/<[^>]*>/g, "");
+}
+
+/** Sanitize Pagefind excerpt HTML — allow only <mark> highlight tags */
+export function sanitizeExcerpt(html: string): string {
+  // Pagefind wraps matches in <mark> tags — preserve those, strip everything else
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(?!\/?mark[ >])[^>]*>/gi, "");
 }
 
 /** Format a pl-* tag name into a human-readable label */
@@ -138,8 +165,8 @@ export function extractYear(date: string, tagName?: string): string {
   // Derive from congress number in tag name: pl-113-* → 2013-2014
   if (tagName) {
     const match = tagName.match(/pl-(\d+)-/);
-    if (match) {
-      const congress = parseInt(match[1]);
+    if (match && match[1]) {
+      const congress = parseInt(match[1], 10);
       // Congress starts in odd year: 113th = 2013-2014, 114th = 2015-2016, etc.
       const startYear = 2013 + (congress - 113) * 2;
       return `${startYear}`;

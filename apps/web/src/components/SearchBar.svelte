@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { sanitizeExcerpt } from "../lib/github";
+
   // Pagefind types for the dynamically imported module
   interface PagefindResult {
     id: string;
@@ -177,7 +179,7 @@
               </div>
               <div class="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html result.excerpt}
+                {@html sanitizeExcerpt(result.excerpt)}
               </div>
             </a>
           </li>
