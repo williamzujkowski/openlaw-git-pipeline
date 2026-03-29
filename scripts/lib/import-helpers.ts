@@ -52,7 +52,11 @@ export async function gitCommit(repo: string, message: string): Promise<void> {
 }
 
 export async function gitTag(repo: string, tag: string): Promise<void> {
-  await execFileAsync('git', ['tag', tag], { cwd: repo, timeout: 10_000 });
+  try {
+    await execFileAsync('git', ['tag', '-f', tag], { cwd: repo, timeout: 10_000 });
+  } catch {
+    // Tag creation is best-effort — don't fail the import
+  }
 }
 
 // --- Download + extract ---
@@ -85,33 +89,45 @@ async function isDocNotFound(response: Response): Promise<boolean> {
 
 async function fetchWithRateRetry(
   url: string,
-  log: Logger
+  log: Logger,
+  maxRetries = 3
 ): Promise<Response | null> {
-  // Use manual redirect handling so we can detect 302→docnotfound sequences
-  const response = await fetch(url, { redirect: 'follow' });
-  if (response.status === 302 || response.status === 301) {
-    // Should not happen with redirect:'follow', but guard anyway
-    log.warn('Unexpected redirect not followed', { url, status: response.status });
-    return null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, { redirect: 'follow' });
+      if (response.status === 302 || response.status === 301) {
+        return null;
+      }
+      if (response.status === 404) return null;
+      if (response.status === 429) {
+        log.warn('Rate limited, waiting 30s', { url, attempt });
+        await new Promise<void>((r) => setTimeout(r, RATE_LIMIT_BACKOFF_MS));
+        continue;
+      }
+      if (!response.ok) {
+        log.warn('Download failed', { url, status: response.status, attempt });
+        if (attempt < maxRetries) {
+          await new Promise<void>((r) => setTimeout(r, 5000 * attempt));
+          continue;
+        }
+        return null;
+      }
+      if (await isDocNotFound(response)) {
+        return null;
+      }
+      return response;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown';
+      log.warn('Network error, retrying', { url, attempt, error: msg });
+      if (attempt < maxRetries) {
+        await new Promise<void>((r) => setTimeout(r, 10000 * attempt));
+        continue;
+      }
+      log.error('Network error after all retries', { url, attempts: maxRetries });
+      return null;
+    }
   }
-  if (response.status === 404) return null;
-  if (response.status === 429) {
-    log.warn('Rate limited, waiting 30s', { url });
-    await new Promise<void>((r) => setTimeout(r, RATE_LIMIT_BACKOFF_MS));
-    const retry = await fetch(url, { redirect: 'follow' });
-    if (!retry.ok) return null;
-    if (await isDocNotFound(retry)) return null;
-    return retry;
-  }
-  if (!response.ok) {
-    log.warn('Download failed', { url, status: response.status });
-    return null;
-  }
-  // OLRC sometimes returns 200 with an HTML "not found" page after an internal redirect
-  if (await isDocNotFound(response)) {
-    return null;
-  }
-  return response;
+  return null;
 }
 
 export async function downloadAndExtractXml(

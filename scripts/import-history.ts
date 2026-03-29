@@ -261,7 +261,15 @@ async function main(): Promise<void> {
   });
 
   for (const rp of points) {
-    await processReleasePoint(rp, state, rateLimiter, metrics);
+    try {
+      await processReleasePoint(rp, state, rateLimiter, metrics);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error('Release point failed, continuing to next', { label: rp.label, error: msg });
+      // Save state so we don't retry this one
+      state.lastCompletedReleasePoint = `${rp.congress}-${rp.law}`;
+      if (!dryRun) await saveState(repoPath, state);
+    }
   }
 
   const elapsed = (performance.now() - metrics.startTime) / 1000;
