@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiffViewer from '../../components/DiffViewer.svelte';
 import PrecedentDrawer from '../../components/PrecedentDrawer.svelte';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import ArticleToc from '../../components/ArticleToc.svelte';
 
 export async function getStaticPaths() {
   const entries = await getCollection('statutes');
@@ -178,10 +179,14 @@ const isRenumbered = entry.data.title.includes('Renumbered');
       <Content />
     </div>
 
-    <!-- Chapter TOC sidebar -->
-    {chapterSiblings.length > 1 && (
-      <aside class="hidden w-56 shrink-0 lg:block">
-        <nav class="sticky top-6 font-sans" aria-label="Chapter sections">
+    <!-- Right sidebar: Article TOC + Chapter sections -->
+    <aside class="hidden w-56 shrink-0 lg:block">
+      <!-- Article TOC (only renders for pages with 3+ headings) -->
+      <ArticleToc client:idle contentSelector=".prose" />
+
+      <!-- Chapter TOC -->
+      {chapterSiblings.length > 1 && (
+        <nav class="sticky top-6 mt-4 font-sans" aria-label="Chapter sections">
           <h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate dark:text-gray-500">
             Chapter {chapter} Sections
           </h2>
@@ -207,8 +212,8 @@ const isRenumbered = entry.data.title.includes('Renumbered');
             })}
           </ul>
         </nav>
-      </aside>
-    )}
+      )}
+    </aside>
   </div>
 
   <!-- Prev / Next section navigation -->
