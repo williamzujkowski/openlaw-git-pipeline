@@ -1,3 +1,4 @@
+
 ## [0.5.7](https://github.com/civic-source/us-code-tracker/compare/v0.5.6...v0.5.7) (2026-03-29)
 
 ### Features
@@ -9,32 +10,38 @@
 * **scripts:** filter diffs to body-only changes, exclude frontmatter noise ([#55](https://github.com/civic-source/us-code-tracker/issues/55)) ([ea56f15](https://github.com/civic-source/us-code-tracker/commit/ea56f151ead06b62b61997dfb31b51e2f0a4d3a3))
 * **web:** DiffViewer — eliminate N+1 API calls, clean markdown display ([577aed3](https://github.com/civic-source/us-code-tracker/commit/577aed3d40c4ab387e47fecd06312877a54684b7))
 * **web:** resolve 5 DiffViewer cosmetic issues ([#50](https://github.com/civic-source/us-code-tracker/issues/50)-[#54](https://github.com/civic-source/us-code-tracker/issues/54)) ([35042bc](https://github.com/civic-source/us-code-tracker/commit/35042bcff02821c0f847d24464b4d757c0c368d2)), closes [#51](https://github.com/civic-source/us-code-tracker/issues/51) [#52](https://github.com/civic-source/us-code-tracker/issues/52) [#53](https://github.com/civic-source/us-code-tracker/issues/53)
+
 ## [0.5.6](https://github.com/civic-source/us-code-tracker/compare/v0.5.5...v0.5.6) (2026-03-29)
 
 ### Bug Fixes
 
 * **scripts:** add network retry + error resilience to historical importer ([de6fec5](https://github.com/civic-source/us-code-tracker/commit/de6fec593af281a48a0f83d616bb57062c0b26ac))
 * **scripts:** batch git add by title directory + use 255 verified release points ([7332794](https://github.com/civic-source/us-code-tracker/commit/73327942cf25a1fd24bf25bdc83333033f1c359a))
+
 ## [0.5.5](https://github.com/civic-source/us-code-tracker/compare/v0.5.4...v0.5.5) (2026-03-29)
 
 ### Features
 
 * **web:** version timeline + comparison in DiffViewer ([#46](https://github.com/civic-source/us-code-tracker/issues/46)) ([20766db](https://github.com/civic-source/us-code-tracker/commit/20766db636068bb9324aff7d7a7b3c207ff64364))
+
 ## [0.5.4](https://github.com/civic-source/us-code-tracker/compare/v0.5.3...v0.5.4) (2026-03-29)
 
 ### Bug Fixes
 
 * **scripts:** add cached release points fallback + graceful 302 handling ([0ac0041](https://github.com/civic-source/us-code-tracker/commit/0ac0041a8031ab6d22ef03dd1947a2dcfdd41d8f))
+
 ## [0.5.3](https://github.com/civic-source/us-code-tracker/compare/v0.5.2...v0.5.3) (2026-03-29)
 
 ### Bug Fixes
 
 * **transformer:** reformat 47 sections with inline list markers ([#47](https://github.com/civic-source/us-code-tracker/issues/47)) ([335e0b7](https://github.com/civic-source/us-code-tracker/commit/335e0b78d21b5ae71330f3164716233abfba1129))
+
 ## [0.5.2](https://github.com/civic-source/us-code-tracker/compare/v0.5.1...v0.5.2) (2026-03-29)
 
 ### Features
 
 * **web:** add notices for Omitted, Transferred, Renumbered sections ([#48](https://github.com/civic-source/us-code-tracker/issues/48)) ([32f416d](https://github.com/civic-source/us-code-tracker/commit/32f416d41e7553e000dc355ce6c6df173d5c43c7)), closes [#47](https://github.com/civic-source/us-code-tracker/issues/47)
+
 ## [0.5.1](https://github.com/civic-source/us-code-tracker/compare/v0.5.0...v0.5.1) (2026-03-29)
 
 ### Features
@@ -45,21 +52,25 @@
 ### Bug Fixes
 
 * **scripts:** use relative imports for tsx compatibility ([9e0d79d](https://github.com/civic-source/us-code-tracker/commit/9e0d79d4fa92f8e53de5ab4c0d487d9f0598f4f2))
+
 ## [0.5.0](https://github.com/civic-source/us-code-tracker/compare/v0.4.6...v0.5.0) (2026-03-29)
 
 ### Features
 
 * **annotator:** Precedent Mapping Phase A — schema, rate limiting, dedup ([#40](https://github.com/civic-source/us-code-tracker/issues/40)) ([36d4d97](https://github.com/civic-source/us-code-tracker/commit/36d4d972c903087a832eb007264c9c23b4d52267))
+
 ## [0.4.6](https://github.com/civic-source/us-code-tracker/compare/v0.4.5...v0.4.6) (2026-03-29)
 
 ### Bug Fixes
 
 * **web:** improve Change History display and OLRC URL pattern ([#39](https://github.com/civic-source/us-code-tracker/issues/39)) ([8b24548](https://github.com/civic-source/us-code-tracker/commit/8b24548145b5c1a5c9eb6c11c2cbafb7b417e688))
+
 ## [0.4.5](https://github.com/civic-source/us-code-tracker/compare/v0.4.4...v0.4.5) (2026-03-29)
 
 ### Bug Fixes
 
 * **web:** comprehensive design review — 9 issues fixed ([6465601](https://github.com/civic-source/us-code-tracker/commit/6465601bc1cd1132215df4fb6c30b8a11b25f335)), closes [#main-content](https://github.com/civic-source/us-code-tracker/issues/main-content)
+
 ## [0.4.4](https://github.com/civic-source/us-code-tracker/compare/v0.4.3...v0.4.4) (2026-03-29)
 
 ### Features
@@ -69,23 +80,27 @@
 ### Bug Fixes
 
 * **web:** search bar path, theme toggle, typography improvements ([3ce2cdf](https://github.com/civic-source/us-code-tracker/commit/3ce2cdf27603a21a4808ef746afa02bae316a4cc))
+
 ## [0.4.3](https://github.com/civic-source/us-code-tracker/compare/v0.4.2...v0.4.3) (2026-03-29)
 
 ### Features
 
 * **web:** UI polish — homepage stats, favicon, browse bars, heading styling ([68ee2c3](https://github.com/civic-source/us-code-tracker/commit/68ee2c353c1f2226af973e9d1a4caa03e8e85c57))
+
 ## [0.4.2](https://github.com/civic-source/us-code-tracker/compare/v0.4.1...v0.4.2) (2026-03-29)
 
 ### Features
 
 * **web:** improved list formatting, sidebar navigation, footer ([#37](https://github.com/civic-source/us-code-tracker/issues/37)) ([1a98216](https://github.com/civic-source/us-code-tracker/commit/1a9821694883b1f04660187622330ab3706b72a1))
 * **web:** markdown rendering improvements — prose tuning, repealed notices, OLRC links ([#38](https://github.com/civic-source/us-code-tracker/issues/38)) ([0b4b1e5](https://github.com/civic-source/us-code-tracker/commit/0b4b1e50400ac8650918114965e13da2b525ed20))
+
 ## [0.4.1](https://github.com/civic-source/us-code-tracker/compare/v0.4.0...v0.4.1) (2026-03-29)
 
 ### Bug Fixes
 
 * **web:** add trailing slash to base path — fixes broken navigation URLs ([8ce6250](https://github.com/civic-source/us-code-tracker/commit/8ce6250d9d418d76bccb583ab2e36a51d66c1fab))
 * **web:** resolve 12 UX/UI audit findings — accessibility, navigation, design ([#37](https://github.com/civic-source/us-code-tracker/issues/37)) ([3a7e353](https://github.com/civic-source/us-code-tracker/commit/3a7e3531061610feeb810afa6dbaec66a0108936))
+
 ## [0.4.0](https://github.com/civic-source/us-code-tracker/compare/v0.3.0...v0.4.0) (2026-03-29)
 
 ### Features
@@ -96,6 +111,7 @@
 ### Bug Fixes
 
 * **transformer:** handle deeply nested US Code titles ([#35](https://github.com/civic-source/us-code-tracker/issues/35)) ([abae5da](https://github.com/civic-source/us-code-tracker/commit/abae5da9059afc6ff6563c542582c319691b98f2))
+
 ## [0.3.0](https://github.com/civic-source/us-code-tracker/compare/v0.2.0...v0.3.0) (2026-03-29)
 
 ### Features
@@ -106,6 +122,7 @@
 
 * **ci:** add submodule checkout for Content Collections in CI/deploy ([f645f72](https://github.com/civic-source/us-code-tracker/commit/f645f729599993202d51fbabbe4384811ab92ac8))
 * **ci:** correct deploy-pages and upload-pages-artifact SHA pins ([1f68c32](https://github.com/civic-source/us-code-tracker/commit/1f68c329e29d010ea410eca7c789834ca049a36a))
+
 ## [0.2.0](https://github.com/civic-source/us-code-tracker/compare/v0.1.0...v0.2.0) (2026-03-28)
 
 ### Features
@@ -115,7 +132,8 @@
 ### Bug Fixes
 
 * **ci:** update action-gh-release to v2.6.1 for Node.js 24 ([#32](https://github.com/civic-source/us-code-tracker/issues/32)) ([40b2994](https://github.com/civic-source/us-code-tracker/commit/40b29943d837b010becb709cbb25b939da092562))
-## 0.1.0 (2026-03-28)
+
+## [0.1.0](https://github.com/civic-source/us-code-tracker/compare/67d6f6907cc902d52bcb6a1089b09986e98fc9e3...v0.1.0) (2026-03-28)
 
 ### Features
 
