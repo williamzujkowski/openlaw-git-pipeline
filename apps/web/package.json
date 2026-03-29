@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "typecheck": "astro check",
     "lint": "echo 'web app lint not configured (Astro/Svelte needs separate plugins)'",
-    "test": "echo 'no tests yet'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@civic-source/types": "workspace:*",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.2"
   }
 }
