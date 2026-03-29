@@ -51,6 +51,10 @@ export const CaseAnnotationSchema = z.object({
   holdingSummary: z.string().max(500),
   sourceUrl: z.string().url(),
   impact: PrecedentImpactSchema,
+  /** Public Law the statute was current through when this case was decided */
+  statuteVersionRef: z.string().optional(),
+  /** Human-readable note about version alignment */
+  statuteVersionNote: z.string().optional(),
 });
 
 export const PrecedentAnnotationSchema = z.object({
