@@ -3,7 +3,7 @@ import type { Result, IXmlToMarkdownAdapter } from '@civic-source/types';
 import { USLM_ELEMENTS } from './constants.js';
 import { createLogger } from '@civic-source/shared';
 import { parseUslmXml } from './parser.js';
-import { extractTextFromNodes, findElements } from './xml-utils.js';
+import { extractTextFromNodes, findElements, getElementName } from './xml-utils.js';
 import { generateMarkdownForSection } from './markdown-generator.js';
 import type { MarkdownFile } from './markdown-generator.js';
 
@@ -28,58 +28,69 @@ function extractNumFromId(
   return fallback;
 }
 
-/** Collect all section elements from a parent node's children */
-function collectSections(
-  children: unknown[]
-): Array<{ children: unknown[]; attrs: Record<string, string> }> {
-  return findElements(children, USLM_ELEMENTS.section);
+/** Container element names that may wrap sections at any depth */
+const CONTAINER_TAGS: ReadonlySet<string> = new Set([
+  USLM_ELEMENTS.subtitle,
+  USLM_ELEMENTS.part,
+  USLM_ELEMENTS.subpart,
+  USLM_ELEMENTS.chapter,
+  USLM_ELEMENTS.subchapter,
+  USLM_ELEMENTS.division,
+]);
+
+/**
+ * Recursively walk the tree to find all <section> elements at any depth.
+ * Tracks the nearest <chapter> ancestor to assign chapter context.
+ */
+function findAllSections(
+  nodes: unknown[],
+  currentChapter: string
+): Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> {
+  const results: Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> = [];
+
+  for (const node of nodes) {
+    if (node === null || typeof node !== 'object' || Array.isArray(node)) continue;
+    const obj = node as Record<string, unknown>;
+    const tag = getElementName(node);
+    if (tag === null) continue;
+
+    if (tag === USLM_ELEMENTS.section) {
+      const children = obj[tag] as unknown[];
+      const attrs = getAttrsFromNode(obj);
+      const sectionNum = extractNumFromId(children, attrs, '0');
+      results.push({ chapterNum: currentChapter, sectionChildren: children, sectionNum });
+    } else if (CONTAINER_TAGS.has(tag)) {
+      const children = obj[tag] as unknown[];
+      const attrs = getAttrsFromNode(obj);
+      // Update chapter context when we enter a chapter element
+      const chapterForDescendants = tag === USLM_ELEMENTS.chapter
+        ? extractNumFromId(children, attrs, currentChapter)
+        : currentChapter;
+      results.push(...findAllSections(children, chapterForDescendants));
+    }
+  }
+
+  return results;
+}
+
+/** Extract :@ attributes from a preserveOrder node */
+function getAttrsFromNode(obj: Record<string, unknown>): Record<string, string> {
+  if (':@' in obj && obj[':@'] !== null && typeof obj[':@'] === 'object') {
+    const raw = obj[':@'] as Record<string, unknown>;
+    const result: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      result[k] = String(v);
+    }
+    return result;
+  }
+  return {};
 }
 
 /** Walk the parsed tree and collect chapter->section mappings */
 function walkTitle(
   titleChildren: unknown[]
 ): Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> {
-  const results: Array<{ chapterNum: string; sectionChildren: unknown[]; sectionNum: string }> = [];
-
-  const containers = [
-    USLM_ELEMENTS.chapter,
-    USLM_ELEMENTS.subchapter,
-    USLM_ELEMENTS.part,
-    USLM_ELEMENTS.subtitle,
-  ];
-
-  // Direct sections under title (no chapter)
-  for (const section of collectSections(titleChildren)) {
-    const sectionNum = extractNumFromId(section.children, section.attrs, '0');
-    results.push({ chapterNum: '0', sectionChildren: section.children, sectionNum });
-  }
-
-  // Walk containers for chapters
-  for (const containerName of containers) {
-    const containerItems = findElements(titleChildren, containerName);
-    for (const container of containerItems) {
-      const chapterNum = extractNumFromId(container.children, container.attrs, '0');
-
-      // Sections directly in container
-      for (const section of collectSections(container.children)) {
-        const sectionNum = extractNumFromId(section.children, section.attrs, '0');
-        results.push({ chapterNum, sectionChildren: section.children, sectionNum });
-      }
-
-      // Recurse one level for nested subchapter/part
-      for (const innerName of containers) {
-        const innerItems = findElements(container.children, innerName);
-        for (const inner of innerItems) {
-          for (const section of collectSections(inner.children)) {
-            const sectionNum = extractNumFromId(section.children, section.attrs, '0');
-            results.push({ chapterNum, sectionChildren: section.children, sectionNum });
-          }
-        }
-      }
-    }
-  }
-
-  return results;
+  return findAllSections(titleChildren, '0');
 }
 
 /** XML-to-Markdown transformer implementing IXmlToMarkdownAdapter */

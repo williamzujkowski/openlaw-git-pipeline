@@ -65,6 +65,49 @@ const MULTI_SECTION_XML = `
   </title>
 </lawDoc>`;
 
+const DEEPLY_NESTED_XML = `
+<lawDoc>
+  <title identifier="/us/usc/t10">
+    <num>Title 10</num>
+    <heading>Armed Forces</heading>
+    <subtitle identifier="/us/usc/t10/stA">
+      <num>Subtitle A</num>
+      <heading>General Military Law</heading>
+      <part identifier="/us/usc/t10/stA/ptI">
+        <num>Part I</num>
+        <heading>Organization and General Military Powers</heading>
+        <chapter identifier="/us/usc/t10/stA/ptI/ch1">
+          <num>1</num>
+          <heading>Definitions, Rules of Construction, Cross References, and Related Matters</heading>
+          <subchapter identifier="/us/usc/t10/stA/ptI/ch1/schI">
+            <num>I</num>
+            <heading>Definitions</heading>
+            <section identifier="/us/usc/t10/s101">
+              <num>101</num>
+              <heading>Definitions</heading>
+              <content><p>Deep section content</p></content>
+            </section>
+          </subchapter>
+          <section identifier="/us/usc/t10/s102">
+            <num>102</num>
+            <heading>Purpose</heading>
+            <content><p>Direct chapter section</p></content>
+          </section>
+        </chapter>
+        <chapter identifier="/us/usc/t10/stA/ptI/ch2">
+          <num>2</num>
+          <heading>Department of Defense</heading>
+          <section identifier="/us/usc/t10/s111">
+            <num>111</num>
+            <heading>Executive department</heading>
+            <content><p>Chapter 2 section</p></content>
+          </section>
+        </chapter>
+      </part>
+    </subtitle>
+  </title>
+</lawDoc>`;
+
 const EMPTY_XML = `<lawDoc><title identifier="/us/usc/t1"><num>Title 1</num></title></lawDoc>`;
 
 // --- Tests ---
@@ -308,6 +351,31 @@ describe('XmlToMarkdownAdapter', () => {
     expect(result.value).toMatch(/^ {4}\(A\)/m);
     // (i) at depth 3 (clause) — 6 spaces
     expect(result.value).toMatch(/^ {6}\(i\)/m);
+  });
+
+  it('handles deeply nested US Code titles (subtitle>part>chapter>subchapter>section)', () => {
+    const adapter = new XmlToMarkdownAdapter('PL 119-73');
+    const result = adapter.transformToFiles(DEEPLY_NESTED_XML);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // Should find all 3 sections across the hierarchy
+    expect(result.value).toHaveLength(3);
+
+    // Section 101 is inside subtitle>part>chapter>subchapter — should still get chapter 1
+    const s101 = result.value.find((f) => f.path.includes('section-101'));
+    expect(s101).toBeDefined();
+    expect(s101?.path).toBe('statutes/title-10/chapter-1/section-101.md');
+
+    // Section 102 is directly under chapter 1
+    const s102 = result.value.find((f) => f.path.includes('section-102'));
+    expect(s102).toBeDefined();
+    expect(s102?.path).toBe('statutes/title-10/chapter-1/section-102.md');
+
+    // Section 111 is in chapter 2
+    const s111 = result.value.find((f) => f.path.includes('section-111'));
+    expect(s111).toBeDefined();
+    expect(s111?.path).toBe('statutes/title-10/chapter-2/section-111.md');
   });
 
   it('preserves inline element text in mixed content (cross-references)', () => {

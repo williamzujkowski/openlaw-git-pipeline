@@ -28,6 +28,8 @@ export const USLM_ELEMENTS = {
   part: 'part',
   /** Subpart grouping */
   subpart: 'subpart',
+  /** Division grouping */
+  division: 'division',
   /** Individual section — primary unit of law */
   section: 'section',
   /** Subsection within a section */
