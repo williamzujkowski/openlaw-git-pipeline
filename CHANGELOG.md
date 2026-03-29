@@ -1,3 +1,8 @@
+## [0.5.4](https://github.com/civic-source/us-code-tracker/compare/v0.5.3...v0.5.4) (2026-03-29)
+
+### Bug Fixes
+
+* **scripts:** add cached release points fallback + graceful 302 handling ([0ac0041](https://github.com/civic-source/us-code-tracker/commit/0ac0041a8031ab6d22ef03dd1947a2dcfdd41d8f))
 ## [0.5.3](https://github.com/civic-source/us-code-tracker/compare/v0.5.2...v0.5.3) (2026-03-29)
 
 ### Bug Fixes
