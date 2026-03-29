@@ -1,3 +1,8 @@
+## [0.5.3](https://github.com/civic-source/us-code-tracker/compare/v0.5.2...v0.5.3) (2026-03-29)
+
+### Bug Fixes
+
+* **transformer:** reformat 47 sections with inline list markers ([#47](https://github.com/civic-source/us-code-tracker/issues/47)) ([335e0b7](https://github.com/civic-source/us-code-tracker/commit/335e0b78d21b5ae71330f3164716233abfba1129))
 ## [0.5.2](https://github.com/civic-source/us-code-tracker/compare/v0.5.1...v0.5.2) (2026-03-29)
 
 ### Features
