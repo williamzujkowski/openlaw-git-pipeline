@@ -31,19 +31,15 @@ export async function getFileHistory(
   path: string,
   token?: string,
 ): Promise<CommitInfo[]> {
-  try {
-    const octokit = createClient(token);
-    const response = await octokit.repos.listCommits({ owner, repo, path, per_page: 50 });
+  const octokit = createClient(token);
+  const response = await octokit.repos.listCommits({ owner, repo, path, per_page: 50 });
 
-    return response.data.map((c) => ({
-      sha: c.sha,
-      message: c.commit.message.split("\n")[0] ?? "",
-      date: c.commit.author?.date ?? "",
-      author: c.commit.author?.name ?? "unknown",
-    }));
-  } catch {
-    return [];
-  }
+  return response.data.map((c) => ({
+    sha: c.sha,
+    message: c.commit.message.split("\n")[0] ?? "",
+    date: c.commit.author?.date ?? "",
+    author: c.commit.author?.name ?? "unknown",
+  }));
 }
 
 export async function getFileDiff(
@@ -78,10 +74,10 @@ export async function getFileDiff(
 }
 
 export function isRateLimited(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    (error as { status: number }).status === 403
-  );
+  if (typeof error !== "object" || error === null || !("status" in error)) {
+    return false;
+  }
+  const status = (error as { status: number }).status;
+  // GitHub returns 403 for unauthenticated rate limits and 429 for secondary rate limits
+  return status === 403 || status === 429;
 }

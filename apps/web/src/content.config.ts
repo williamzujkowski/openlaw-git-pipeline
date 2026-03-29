@@ -10,7 +10,7 @@ const statutes = defineCollection({
     chapter: z.number(),
     current_through: z.string(),
     classification: z.string(),
-    generated_at: z.string(),
+    generated_at: z.string().optional(),
   }),
 });
 

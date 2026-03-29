@@ -7,10 +7,11 @@
   }
 
   const COURT_ORDER: CaseAnnotation['court'][] = ['SCOTUS', 'Appellate', 'District'];
+  // Use custom theme colors (--color-amber, --color-teal, --color-slate) for consistency
   const COURT_COLORS: Record<CaseAnnotation['court'], string> = {
-    SCOTUS: 'text-amber-600 dark:text-amber-400',
-    Appellate: 'text-teal-600 dark:text-teal-400',
-    District: 'text-slate-600 dark:text-slate-400',
+    SCOTUS: 'text-amber dark:text-amber',
+    Appellate: 'text-teal dark:text-teal-bright',
+    District: 'text-slate dark:text-gray-400',
   };
 
   let { sectionId, annotations }: Props = $props();
@@ -38,8 +39,10 @@
   <!-- Toggle button -->
   <button
     onclick={() => (open = !open)}
-    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md bg-teal-600 px-2 py-3 text-xs font-semibold text-white shadow-lg hover:bg-teal-700"
+    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md bg-teal px-2 py-3 text-xs font-semibold text-white shadow-lg hover:opacity-90 transition-opacity"
     aria-label={open ? 'Close precedent drawer' : 'Open precedent drawer'}
+    aria-expanded={open}
+    aria-controls="precedent-drawer-panel"
   >
     {open ? '›' : '‹'} Cases ({annotations.length})
   </button>
@@ -47,7 +50,9 @@
   <!-- Drawer panel -->
   {#if open}
     <aside
-      class="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto border-l border-gray-200 bg-white p-5 shadow-xl sm:w-[400px] dark:border-gray-700 dark:bg-[#0a1628]"
+      id="precedent-drawer-panel"
+      class="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto border-l border-gray-200 bg-white p-5 shadow-xl sm:w-[400px] dark:border-gray-700 dark:bg-gray-950"
+      aria-label="Precedent annotations"
     >
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-lg font-bold text-slate-900 dark:text-gray-100">
@@ -76,7 +81,7 @@
                 href={c.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-sm font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-400"
+                class="text-sm font-medium text-teal underline-offset-2 hover:underline dark:text-teal-bright"
               >{c.caseName}</a>
               <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {c.citation} · {c.court} · {c.date}
@@ -89,7 +94,7 @@
               {#if c.holdingSummary.length > 120}
                 <button
                   onclick={() => toggleHolding(globalIdx)}
-                  class="mt-1 text-xs text-teal-600 hover:underline dark:text-teal-400"
+                  class="mt-1 text-xs text-teal hover:underline dark:text-teal-bright"
                 >{expandedHoldings.has(globalIdx) ? 'show less' : 'show more'}</button>
               {/if}
             </li>

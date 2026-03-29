@@ -99,6 +99,12 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      showResults = false;
+      activeIndex = -1;
+      return;
+    }
+
     if (!showResults || results.length === 0) return;
 
     if (event.key === 'ArrowDown') {
@@ -109,9 +115,9 @@
       activeIndex = activeIndex > 0 ? activeIndex - 1 : results.length - 1;
     } else if (event.key === 'Enter' && activeIndex >= 0) {
       event.preventDefault();
-      const selected = results[activeIndex];
-      if (selected) {
-        window.location.href = selected.url;
+      const selectedResult = results[activeIndex];
+      if (selectedResult) {
+        window.location.href = selectedResult.url;
       }
     }
   }
@@ -142,32 +148,41 @@
     />
   </div>
 
-  {#if showResults}
-    <div class="absolute left-0 top-full z-50 mt-1 max-h-80 w-72 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+  <!-- Always render the listbox container so aria-controls is always valid when expanded -->
+  <ul
+    id="search-results"
+    role="listbox"
+    aria-label="Search results"
+    class="absolute left-0 top-full z-50 mt-1 w-72 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 {showResults ? 'max-h-80' : 'hidden'}"
+  >
+    {#if showResults}
       {#if loading}
-        <div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Searching...</div>
+        <li role="option" aria-selected="false" class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Searching...</li>
       {:else if results.length === 0}
-        <div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">No results found.</div>
+        <li role="option" aria-selected="false" class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">No results found.</li>
       {:else}
-        <ul id="search-results" class="divide-y divide-gray-100 dark:divide-gray-800" role="listbox">
-          {#each results as result, i}
-            <li role="option" id="result-{i}" aria-selected={i === activeIndex}>
-              <a
-                href={result.url}
-                class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 {i === activeIndex ? 'bg-gray-100 dark:bg-gray-800' : ''}"
-              >
-                <div class="text-xs font-medium text-gray-900 dark:text-gray-100">
-                  {result.meta.title ?? 'Untitled'}
-                </div>
-                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  {@html result.excerpt}
-                </div>
-              </a>
-            </li>
-          {/each}
-        </ul>
+        {#each results as result, i}
+          <li
+            role="option"
+            id="result-{i}"
+            aria-selected={i === activeIndex}
+            class="divide-y divide-gray-100 dark:divide-gray-800"
+          >
+            <a
+              href={result.url}
+              class="block px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 {i === activeIndex ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+            >
+              <div class="truncate text-xs font-medium text-gray-900 dark:text-gray-100">
+                {result.meta.title ?? 'Untitled'}
+              </div>
+              <div class="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html result.excerpt}
+              </div>
+            </a>
+          </li>
+        {/each}
       {/if}
-    </div>
-  {/if}
+    {/if}
+  </ul>
 </div>

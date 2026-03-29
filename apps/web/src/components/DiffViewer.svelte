@@ -93,9 +93,10 @@
         <li>
           <button
             class="w-full rounded px-2 py-1 text-left text-xs transition-colors {selected.includes(commit.sha)
-              ? 'bg-teal/10 dark:bg-navy'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
+              ? 'bg-teal/10 text-navy ring-1 ring-teal/30 dark:bg-teal/20 dark:text-gray-100'
+              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}"
             onclick={() => toggleCommit(commit.sha)}
+            aria-pressed={selected.includes(commit.sha)}
           >
             <code class="font-mono text-teal dark:text-teal">{commit.sha.slice(0, 7)}</code>
             <span class="ml-2 text-gray-700 dark:text-gray-300">{commit.message}</span>

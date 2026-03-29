@@ -8,14 +8,15 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --color-navy: #1B3A5C;
   --color-teal: #0D7377;
+  --color-teal-bright: #14a3a8;
   --color-amber: #D4A843;
   --color-slate: #4A5568;
 }
 
 /* Legal text readability — 18px base for comfortable reading */
 .prose {
-  --tw-prose-body-line-height: 1.85;
   font-size: 1.125rem; /* 18px */
+  line-height: 1.85; /* comfortable for long legal paragraphs */
   max-width: min(72ch, 100%);
 }
 
@@ -64,7 +65,7 @@
 
 .prose ul ul {
   padding-left: 1.75em;
-  border-left: 2px solid #0D7377;
+  border-left: 2px solid var(--color-teal);
   margin-left: 0.5em;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
@@ -72,7 +73,7 @@
 
 /* Dark mode: slightly brighter teal border for nested lists */
 :where(.dark, .dark *) .prose ul ul {
-  border-left-color: #14a3a8;
+  border-left-color: var(--color-teal-bright);
 }
 
 /* At deep nesting, reduce padding to prevent horizontal overflow */
@@ -93,41 +94,27 @@
 
 /* Code/reference blocks — subtle background tint */
 .prose code {
-  background-color: #f1f5f9; /* slate-100 */
+  background-color: rgb(74 85 104 / 10%); /* slate at 10% opacity */
   padding: 0.15em 0.35em;
   border-radius: 0.25em;
   font-size: 0.875em;
 }
 
 :where(.dark, .dark *) .prose code {
-  background-color: #1e293b; /* slate-800 */
+  background-color: rgb(27 58 92 / 50%); /* navy at 50% opacity */
+  color: var(--color-gray-200, #e2e8f0);
 }
 
 .prose pre {
-  background-color: #f8fafc; /* slate-50 */
-  border: 1px solid #e2e8f0; /* slate-200 */
+  background-color: var(--color-gray-50, #f8fafc);
+  border: 1px solid var(--color-gray-200, #e2e8f0);
   border-radius: 0.375em;
   padding: 1em;
 }
 
 :where(.dark, .dark *) .prose pre {
-  background-color: #0f172a; /* slate-900 */
-  border-color: #334155; /* slate-700 */
-}
-
-/* Metadata badge contrast — light mode */
-.badge-metadata {
-  background-color: #f3f4f6; /* gray-100 */
-  color: #374151; /* gray-700 */
-}
-
-/* Footer text — ensure readable in both modes */
-footer {
-  color: #4A5568;
-}
-
-:where(.dark, .dark *) footer {
-  color: #9ca3af; /* gray-400 */
+  background-color: var(--color-gray-950, #030712);
+  border-color: var(--color-gray-700, #334155);
 }
 
 /* Print styles */

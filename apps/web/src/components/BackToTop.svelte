@@ -1,14 +1,27 @@
 <script lang="ts">
   let visible = $state(false);
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('scroll', () => {
-      visible = window.scrollY > 400;
-    }, { passive: true });
-  }
+  $effect(() => {
+    // The page uses overflow-y-auto on <main>, not on window.
+    // We must attach to the main element to detect scroll position.
+    const main = document.getElementById('main-content');
+    if (!main) return;
+
+    function onScroll(): void {
+      visible = main!.scrollTop > 400;
+    }
+
+    main.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      main.removeEventListener('scroll', onScroll);
+    };
+  });
 
   function scrollToTop(): void {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const main = document.getElementById('main-content');
+    if (main) {
+      main.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 </script>
 
