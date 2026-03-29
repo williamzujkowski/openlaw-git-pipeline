@@ -1,3 +1,13 @@
+## [0.3.0](https://github.com/civic-source/us-code-tracker/compare/v0.2.0...v0.3.0) (2026-03-29)
+
+### Features
+
+* **web:** wire Pagefind search and update content submodule ([2769c1f](https://github.com/civic-source/us-code-tracker/commit/2769c1f38a89cc77db7b0925c2efd8860e33a94a))
+
+### Bug Fixes
+
+* **ci:** add submodule checkout for Content Collections in CI/deploy ([f645f72](https://github.com/civic-source/us-code-tracker/commit/f645f729599993202d51fbabbe4384811ab92ac8))
+* **ci:** correct deploy-pages and upload-pages-artifact SHA pins ([1f68c32](https://github.com/civic-source/us-code-tracker/commit/1f68c329e29d010ea410eca7c789834ca049a36a))
 ## [0.2.0](https://github.com/civic-source/us-code-tracker/compare/v0.1.0...v0.2.0) (2026-03-28)
 
 ### Features
