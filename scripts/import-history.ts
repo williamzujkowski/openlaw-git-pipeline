@@ -37,6 +37,27 @@ import {
 
 const log = createLogger('import-history');
 
+// --- Progress file ---
+
+interface ImportProgress {
+  currentReleasePoint: string;
+  totalProcessed: number;
+  totalRemaining: number;
+  sectionsChangedTotal: number;
+  peakMemoryMB: number;
+  elapsedSeconds: number;
+  estimatedRemainingSeconds: number | null;
+}
+
+async function writeProgress(
+  repoPath: string,
+  progress: ImportProgress
+): Promise<void> {
+  const { writeFile: wf } = await import('node:fs/promises');
+  const { join: pjoin } = await import('node:path');
+  await wf(pjoin(repoPath, '.import-progress.json'), JSON.stringify(progress, null, 2) + '\n', 'utf-8');
+}
+
 // --- Constants ---
 
 const ALL_TITLES = Array.from({ length: 54 }, (_, i) => (i + 1).toString().padStart(2, '0'));
@@ -163,7 +184,8 @@ async function processReleasePoint(
   rp: ReleasePointId,
   state: ImportState,
   rateLimiter: TokenBucket,
-  metrics: ImportMetrics
+  metrics: ImportMetrics,
+  totalPoints: number
 ): Promise<void> {
   log.info('Processing release point', { label: rp.label });
   let totalChanged = 0;
@@ -202,6 +224,27 @@ async function processReleasePoint(
   metrics.releasePointsProcessed++;
   metrics.titlesChanged += totalTitlesChanged;
   metrics.sectionsChanged += totalChanged;
+
+  // Write progress file for external monitoring
+  if (!dryRun) {
+    const elapsed = (performance.now() - metrics.startTime) / 1000;
+    const avgPerRp = metrics.releasePointsProcessed > 0
+      ? elapsed / metrics.releasePointsProcessed
+      : 0;
+    const memUsage = process.memoryUsage();
+    const peakMB = Math.round(memUsage.rss / 1024 / 1024);
+    await writeProgress(repoPath, {
+      currentReleasePoint: rp.label,
+      totalProcessed: metrics.releasePointsProcessed,
+      totalRemaining: totalPoints - metrics.releasePointsProcessed,
+      sectionsChangedTotal: metrics.sectionsChanged,
+      peakMemoryMB: peakMB,
+      elapsedSeconds: Math.round(elapsed),
+      estimatedRemainingSeconds: avgPerRp > 0
+        ? Math.round(avgPerRp * (totalPoints - metrics.releasePointsProcessed))
+        : null,
+    });
+  }
 }
 
 // --- Main ---
@@ -262,7 +305,7 @@ async function main(): Promise<void> {
 
   for (const rp of points) {
     try {
-      await processReleasePoint(rp, state, rateLimiter, metrics);
+      await processReleasePoint(rp, state, rateLimiter, metrics, points.length);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       log.error('Release point failed, continuing to next', { label: rp.label, error: msg });
