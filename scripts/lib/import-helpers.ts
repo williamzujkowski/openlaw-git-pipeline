@@ -70,21 +70,48 @@ function findXmlFile(dir: string): string | null {
   return null;
 }
 
+/**
+ * Returns true if a response body looks like the OLRC "document not found" redirect page.
+ * OLRC returns HTTP 200 after a 302→docnotfound redirect for unavailable titles.
+ */
+async function isDocNotFound(response: Response): Promise<boolean> {
+  // Check content-type — the not-found page is HTML, not a ZIP binary
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('text/html')) {
+    return true;
+  }
+  return false;
+}
+
 async function fetchWithRateRetry(
   url: string,
   log: Logger
 ): Promise<Response | null> {
-  const response = await fetch(url);
-  if (response.ok) return response;
+  // Use manual redirect handling so we can detect 302→docnotfound sequences
+  const response = await fetch(url, { redirect: 'follow' });
+  if (response.status === 302 || response.status === 301) {
+    // Should not happen with redirect:'follow', but guard anyway
+    log.warn('Unexpected redirect not followed', { url, status: response.status });
+    return null;
+  }
   if (response.status === 404) return null;
   if (response.status === 429) {
     log.warn('Rate limited, waiting 30s', { url });
     await new Promise<void>((r) => setTimeout(r, RATE_LIMIT_BACKOFF_MS));
-    const retry = await fetch(url);
-    return retry.ok ? retry : null;
+    const retry = await fetch(url, { redirect: 'follow' });
+    if (!retry.ok) return null;
+    if (await isDocNotFound(retry)) return null;
+    return retry;
   }
-  log.warn('Download failed', { url, status: response.status });
-  return null;
+  if (!response.ok) {
+    log.warn('Download failed', { url, status: response.status });
+    return null;
+  }
+  // OLRC sometimes returns 200 with an HTML "not found" page after an internal redirect
+  if (await isDocNotFound(response)) {
+    return null;
+  }
+  return response;
 }
 
 export async function downloadAndExtractXml(
@@ -101,7 +128,13 @@ export async function downloadAndExtractXml(
 
   try {
     const response = await fetchWithRateRetry(url, log);
-    if (!response) return null;
+    if (!response) {
+      log.info('Title not available at release point', {
+        title: parseInt(paddedTitle, 10),
+        releasePoint: `PL ${rp.congress}-${rp.law}`,
+      });
+      return null;
+    }
 
     const buf = Buffer.from(await response.arrayBuffer());
     if (buf.length < 4 || buf[0] !== 0x50 || buf[1] !== 0x4b) {
