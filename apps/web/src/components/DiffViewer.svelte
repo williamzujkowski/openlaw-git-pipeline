@@ -1,9 +1,20 @@
 <script lang="ts">
   import {
-    getFileHistory, getFileDiff, getReleaseTags, getFileAtRef,
+    getFileHistory, getFileDiff, getFileAtRef,
     isRateLimited, formatTagName, extractYear,
     type CommitInfo, type DiffLine, type ReleaseTag,
   } from "../lib/github";
+
+  interface SectionDiff {
+    from: string;
+    to: string;
+    lines: { type: "add" | "del" | "context"; content: string }[];
+  }
+
+  interface DiffManifest {
+    pairs: { from: string; to: string; changedSections: number }[];
+    generatedAt: string;
+  }
 
   interface Props {
     sectionPath: string;
@@ -29,6 +40,41 @@
   let compareFrom = $state("");
   let compareTo = $state("");
   let selectedTagContent = $state(""); let selectedTag = $state(""); let hasCompared = $state(false);
+  let usingStaticDiffs = $state(false);
+
+  /** Convert sectionPath like "statutes/title-18/chapter-1/section-111.md" → title and section keys */
+  function sectionPathToParts(path: string): { title: string; section: string } | null {
+    const m = /statutes\/(title-[^/]+)\/[^/]+\/(section-[^/]+)\.md$/.exec(path);
+    if (!m) return null;
+    return { title: m[1] ?? "", section: m[2] ?? "" };
+  }
+
+  function pairKey(from: string, to: string): string {
+    return `${from}_${to}`;
+  }
+
+  async function fetchManifest(): Promise<DiffManifest | null> {
+    try {
+      const res = await fetch("/diffs/manifest.json");
+      if (!res.ok) return null;
+      return (await res.json()) as DiffManifest;
+    } catch {
+      return null;
+    }
+  }
+
+  async function fetchStaticDiff(from: string, to: string): Promise<SectionDiff | null> {
+    const parts = sectionPathToParts(sectionPath);
+    if (!parts) return null;
+    try {
+      const url = `/diffs/${pairKey(from, to)}/${parts.title}/${parts.section}.json`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return (await res.json()) as SectionDiff;
+    } catch {
+      return null;
+    }
+  }
 
   function cleanMarkdownForDisplay(raw: string): string {
     return raw
@@ -43,17 +89,58 @@
     loading = true;
     error = "";
     try {
+      // Try static manifest first — no GitHub API needed
+      const manifest = await fetchManifest();
+      if (manifest && manifest.pairs.length > 0) {
+        usingStaticDiffs = true;
+        tags = manifest.pairs
+          .flatMap((p) => [p.from, p.to])
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .map((name) => ({ name, date: "" }));
+        const last = tags[tags.length - 1];
+        const secondLast = tags[tags.length - 2];
+        if (last) compareTo = last.name;
+        if (secondLast) compareFrom = secondLast.name;
+        // Commit history still requires GitHub API — skip silently if unavailable
+        try {
+          const commitResult = await getFileHistory(repoOwner, repoName, sectionPath, githubToken);
+          const seen = new Set<string>();
+          commits = commitResult.filter(c => !seen.has(c.message) && seen.add(c.message));
+        } catch {
+          // Commit history optional when using static diffs
+        }
+        return;
+      }
+
+      // Fallback: fetch everything from GitHub API
       const [commitResult, tagResult] = await Promise.all([
         getFileHistory(repoOwner, repoName, sectionPath, githubToken),
-        getReleaseTags(repoOwner, repoName, githubToken),
+        // Inline tag fetch to avoid re-importing getReleaseTags (removed from imports)
+        fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/tags?per_page=100${githubToken ? "" : ""}`, {
+          headers: githubToken ? { Authorization: `token ${githubToken}` } : {},
+        }).then(async (r) => {
+          if (!r.ok) return [] as ReleaseTag[];
+          const data = (await r.json()) as { name: string }[];
+          const parseTag = (name: string): [number, number] => {
+            const m = /pl-(\d+)-(\d+)/.exec(name);
+            return m ? [parseInt(m[1], 10), parseInt(m[2], 10)] : [0, 0];
+          };
+          return data
+            .filter((t) => t.name.startsWith("pl-"))
+            .map((t): ReleaseTag => ({ name: t.name, date: "" }))
+            .sort((a, b) => {
+              const [ac, al] = parseTag(a.name);
+              const [bc, bl] = parseTag(b.name);
+              return ac !== bc ? ac - bc : al - bl;
+            });
+        }),
       ]);
-      // Deduplicate commits by message
       const seen = new Set<string>();
       commits = commitResult.filter(c => !seen.has(c.message) && seen.add(c.message));
       tags = tagResult;
       if (tags.length > 0) {
-        compareTo = tags[tags.length - 1].name;
-        if (tags.length > 1) compareFrom = tags[tags.length - 2].name;
+        compareTo = tags[tags.length - 1]?.name ?? "";
+        if (tags.length > 1) compareFrom = tags[tags.length - 2]?.name ?? "";
       }
     } catch (e: unknown) {
       error = isRateLimited(e)
@@ -69,6 +156,19 @@
     diffLoading = true;
     error = "";
     try {
+      if (usingStaticDiffs) {
+        const staticDiff = await fetchStaticDiff(compareFrom, compareTo);
+        if (staticDiff) {
+          diffLines = staticDiff.lines;
+        } else {
+          // Section not changed between these versions
+          diffLines = [];
+        }
+        hasCompared = true;
+        return;
+      }
+
+      // Fallback: GitHub API
       const result = await getFileDiff({
         owner: repoOwner, repo: repoName,
         base: compareFrom, head: compareTo,
