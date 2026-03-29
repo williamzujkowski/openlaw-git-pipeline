@@ -1,3 +1,8 @@
+## [0.4.6](https://github.com/civic-source/us-code-tracker/compare/v0.4.5...v0.4.6) (2026-03-29)
+
+### Bug Fixes
+
+* **web:** improve Change History display and OLRC URL pattern ([#39](https://github.com/civic-source/us-code-tracker/issues/39)) ([8b24548](https://github.com/civic-source/us-code-tracker/commit/8b24548145b5c1a5c9eb6c11c2cbafb7b417e688))
 ## [0.4.5](https://github.com/civic-source/us-code-tracker/compare/v0.4.4...v0.4.5) (2026-03-29)
 
 ### Bug Fixes
