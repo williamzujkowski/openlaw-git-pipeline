@@ -1,3 +1,8 @@
+## [0.5.2](https://github.com/civic-source/us-code-tracker/compare/v0.5.1...v0.5.2) (2026-03-29)
+
+### Features
+
+* **web:** add notices for Omitted, Transferred, Renumbered sections ([#48](https://github.com/civic-source/us-code-tracker/issues/48)) ([32f416d](https://github.com/civic-source/us-code-tracker/commit/32f416d41e7553e000dc355ce6c6df173d5c43c7)), closes [#47](https://github.com/civic-source/us-code-tracker/issues/47)
 ## [0.5.1](https://github.com/civic-source/us-code-tracker/compare/v0.5.0...v0.5.1) (2026-03-29)
 
 ### Features
