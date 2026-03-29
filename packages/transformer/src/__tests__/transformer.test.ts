@@ -6,6 +6,7 @@ import {
   buildSectionPath,
   formatListItem,
   nestingDepthFor,
+  reformatInlineLists,
   FrontmatterSchema,
   generateSectionBody,
   generateMarkdownForSection,
@@ -403,5 +404,64 @@ describe('XmlToMarkdownAdapter', () => {
     // With preserveOrder, inline ref text is preserved in position
     expect(result.value).toContain('section 111');
     expect(result.value).toMatch(/described in.*section 111.*of this title shall be fined/);
+  });
+});
+
+describe('reformatInlineLists', () => {
+  it('reformats inline list markers into proper markdown lists', () => {
+    const input =
+      '(a) First item text here (b) Second item (1) sub item one (2) sub item two (c) Third item';
+    const result = reformatInlineLists(input);
+    expect(result).toContain('- **(a)** First item text here');
+    expect(result).toContain('- **(b)** Second item');
+    expect(result).toContain('  - **(1)** sub item one');
+    expect(result).toContain('  - **(2)** sub item two');
+    expect(result).toContain('- **(c)** Third item');
+  });
+
+  it('handles uppercase alpha markers at depth 2', () => {
+    const input = '(a) Top level (A) Upper sub one (B) Upper sub two';
+    const result = reformatInlineLists(input);
+    expect(result).toContain('- **(a)** Top level');
+    expect(result).toContain('    - **(A)** Upper sub one');
+    expect(result).toContain('    - **(B)** Upper sub two');
+  });
+
+  it('handles roman numeral markers at depth 3', () => {
+    const input = '(a) Top (i) Roman one (ii) Roman two (iii) Roman three';
+    const result = reformatInlineLists(input);
+    expect(result).toContain('- **(a)** Top');
+    expect(result).toContain('      - **(i)** Roman one');
+    expect(result).toContain('      - **(ii)** Roman two');
+    expect(result).toContain('      - **(iii)** Roman three');
+  });
+
+  it('does not modify lines already formatted as markdown list items', () => {
+    const input = '- **(a)** Already formatted\n- **(b)** Also formatted';
+    const result = reformatInlineLists(input);
+    expect(result).toBe(input);
+  });
+
+  it('does not modify headings or empty lines', () => {
+    const input = '# Section heading\n\nSome regular text.';
+    const result = reformatInlineLists(input);
+    expect(result).toBe(input);
+  });
+
+  it('does not split lines with fewer than 2 markers', () => {
+    const input = 'Only one marker here (a) at the end.';
+    const result = reformatInlineLists(input);
+    expect(result).toBe(input);
+  });
+
+  it('handles the wall-of-text pattern from real data', () => {
+    const input =
+      '(a) Short title This section may be cited as the "Test Act". (b) Definitions In this section— "term" means something. (c) Program authority (1) In general The Secretary shall allocate funds. (2) Other For any fiscal year.';
+    const result = reformatInlineLists(input);
+    expect(result).toContain('- **(a)** Short title This section may be cited');
+    expect(result).toContain('- **(b)** Definitions In this section');
+    expect(result).toContain('- **(c)** Program authority');
+    expect(result).toContain('  - **(1)** In general The Secretary shall allocate funds.');
+    expect(result).toContain('  - **(2)** Other For any fiscal year.');
   });
 });

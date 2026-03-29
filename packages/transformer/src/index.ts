@@ -8,6 +8,7 @@ export {
   buildSectionPath,
   formatListItem,
   nestingDepthFor,
+  reformatInlineLists,
   FrontmatterSchema,
 } from './markdown-generator.js';
 export type { Frontmatter, MarkdownFile } from './markdown-generator.js';
