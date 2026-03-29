@@ -19,6 +19,10 @@ for (const entry of allStatutes) {
 // Sort titles numerically
 const sortedTitles = [...byTitle.entries()].sort((a, b) => a[0] - b[0]);
 
+const totalSections = allStatutes.length;
+const totalTitles = byTitle.size;
+const maxSections = Math.max(...[...byTitle.values()].map((e) => e.length), 1);
+
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -29,6 +33,16 @@ const base = import.meta.env.BASE_URL;
   <Breadcrumbs items={[{ label: 'Home', href: base }, { label: 'Browse' }]} />
 
   <h1 class="text-navy dark:text-amber">United States Code</h1>
+
+  <!-- Summary stats -->
+  <div class="not-prose mb-4 flex items-center gap-2 font-sans text-sm text-slate dark:text-gray-400">
+    <span class="font-semibold text-navy dark:text-amber">{totalTitles}</span>
+    <span>titles</span>
+    <span class="text-gray-300 dark:text-gray-700">&middot;</span>
+    <span class="font-semibold text-navy dark:text-amber">{totalSections.toLocaleString()}</span>
+    <span>sections</span>
+  </div>
+
   <p>
     The United States Code is organized into titles covering the general and
     permanent laws of the United States. Titles with available sections are
@@ -39,20 +53,29 @@ const base = import.meta.env.BASE_URL;
     <ul class="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
       {sortedTitles.map(([titleNum, entries]) => {
         const titleName = TITLE_NAMES[titleNum] ?? `Title ${titleNum}`;
+        const pct = Math.round((entries.length / maxSections) * 100);
         return (
           <li>
             <a
               href={`${base}browse/title-${titleNum}/`}
-              class="flex items-baseline gap-3 px-4 py-3 font-sans text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
+              class="flex items-center gap-3 px-4 py-3 font-sans text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
             >
               <span class="w-10 shrink-0 text-right font-mono text-xs text-slate dark:text-gray-500">
                 {titleNum}
               </span>
-              <span class="text-navy dark:text-gray-200">
+              <span class="min-w-0 flex-1 text-navy dark:text-gray-200 truncate">
                 {titleName}
               </span>
-              <span class="ml-auto text-xs text-gray-400">
-                {entries.length} section{entries.length !== 1 ? 's' : ''}
+              <!-- Relative size bar -->
+              <span class="hidden sm:flex items-center gap-2 shrink-0">
+                <span
+                  class="h-1.5 rounded-full bg-teal/40"
+                  style={`width: ${Math.max(pct, 2)}px`}
+                  aria-hidden="true"
+                ></span>
+              </span>
+              <span class="shrink-0 text-xs text-gray-400 tabular-nums">
+                {entries.length.toLocaleString()} §
               </span>
             </a>
           </li>

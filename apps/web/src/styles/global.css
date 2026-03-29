@@ -20,9 +20,11 @@
 /* Section heading § styling */
 .prose h1 {
   font-variant-numeric: oldstyle-nums;
+  /* § symbol size */
+  font-feature-settings: "case" 1;
 }
 
-/* Nested list styling improvements */
+/* Nested list styling improvements — visible in both light and dark mode */
 .prose ul {
   list-style: none;
   padding-left: 0;
@@ -30,14 +32,36 @@
 
 .prose ul ul {
   padding-left: 1.5em;
-  border-left: 2px solid var(--color-teal);
+  /* Use explicit color so it shows in both light and dark mode */
+  border-left: 2px solid #0D7377;
   margin-left: 0.5em;
+}
+
+/* Dark mode: slightly brighter teal border for nested lists */
+:where(.dark, .dark *) .prose ul ul {
+  border-left-color: #14a3a8;
 }
 
 /* Legal text long paragraphs */
 .prose li > p {
   margin-top: 0.25em;
   margin-bottom: 0.25em;
+}
+
+/* Metadata badge contrast — light mode */
+.badge-metadata {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #374151; /* gray-700 */
+}
+
+/* Footer text — ensure readable in both modes */
+footer {
+  /* Already uses explicit color classes; this is a fallback */
+  color: #4A5568;
+}
+
+:where(.dark, .dark *) footer {
+  color: #9ca3af; /* gray-400 */
 }
 
 /* Print styles */

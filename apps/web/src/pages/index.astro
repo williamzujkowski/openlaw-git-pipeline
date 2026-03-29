@@ -14,22 +14,58 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     any two releases of federal law.
   </p>
 
+  <!-- Quick stats -->
+  <div class="not-prose my-6 flex flex-wrap gap-4">
+    <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
+      <p class="text-2xl font-bold text-teal">53</p>
+      <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Titles</p>
+    </div>
+    <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
+      <p class="text-2xl font-bold text-teal">59,954</p>
+      <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Sections</p>
+    </div>
+    <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
+      <p class="text-2xl font-bold text-teal">PL 119-73</p>
+      <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Current through</p>
+    </div>
+  </div>
+
   <h2>What this project does</h2>
-  <ul>
-    <li>Downloads official XML releases from the Office of the Law Revision Counsel.</li>
-    <li>Converts each title, chapter, and section into plain-text files tracked by Git.</li>
-    <li>Generates diffs that show exactly which words were added, removed, or amended.</li>
-    <li>Provides a browsable interface for exploring all 54 titles of the US Code.</li>
+  <ul class="not-prose my-4 space-y-2 font-sans text-sm text-gray-700 dark:text-gray-300">
+    <li class="flex items-start gap-2">
+      <span class="mt-0.5 text-teal" aria-hidden="true">&#x2193;</span>
+      <span>Downloads official XML releases from the Office of the Law Revision Counsel.</span>
+    </li>
+    <li class="flex items-start gap-2">
+      <span class="mt-0.5 text-teal" aria-hidden="true">&#x1F4C4;</span>
+      <span>Converts each title, chapter, and section into plain-text files tracked by Git.</span>
+    </li>
+    <li class="flex items-start gap-2">
+      <span class="mt-0.5 text-teal" aria-hidden="true">&#x25B3;</span>
+      <span>Generates diffs that show exactly which words were added, removed, or amended.</span>
+    </li>
+    <li class="flex items-start gap-2">
+      <span class="mt-0.5 text-teal" aria-hidden="true">&#x1F50D;</span>
+      <span>Provides a browsable interface for exploring all 54 titles of the US Code.</span>
+    </li>
   </ul>
 
-  <h2>Getting started</h2>
+  <h2>How it works</h2>
   <p>
-    <a href={`${import.meta.env.BASE_URL}browse/`} class="text-teal hover:underline">
-      Browse all titles
-    </a>
-    to explore the current structure of the United States Code. Each title page
-    will show its chapters, sections, and the history of changes over time.
+    A scheduled pipeline downloads new XML releases from uscode.house.gov, parses each
+    title into individual section files, and commits the changes to a Git repository.
+    The site then renders those files with full change history, so you can see exactly
+    what Congress amended and when.
   </p>
+
+  <div class="not-prose mt-6">
+    <a
+      href={`${import.meta.env.BASE_URL}browse/`}
+      class="inline-flex items-center gap-2 rounded-lg bg-teal px-6 py-3 font-sans text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal/90 focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2"
+    >
+      Browse all titles &rarr;
+    </a>
+  </div>
 
   <h2>Data source</h2>
   <p>
