@@ -1,3 +1,13 @@
+## [0.5.1](https://github.com/civic-source/us-code-tracker/compare/v0.5.0...v0.5.1) (2026-03-29)
+
+### Features
+
+* **pipeline:** historical release point importer with delta detection ([#42](https://github.com/civic-source/us-code-tracker/issues/42)) ([8a689e4](https://github.com/civic-source/us-code-tracker/commit/8a689e41c5a8cc5b2f9a86f3ef81935d212d2067))
+* **types:** add statute version reference fields to CaseAnnotation ([#43](https://github.com/civic-source/us-code-tracker/issues/43)) ([c315987](https://github.com/civic-source/us-code-tracker/commit/c315987afeb47cc7cc663b1dee72a8af043505db))
+
+### Bug Fixes
+
+* **scripts:** use relative imports for tsx compatibility ([9e0d79d](https://github.com/civic-source/us-code-tracker/commit/9e0d79d4fa92f8e53de5ab4c0d487d9f0598f4f2))
 ## [0.5.0](https://github.com/civic-source/us-code-tracker/compare/v0.4.6...v0.5.0) (2026-03-29)
 
 ### Features
