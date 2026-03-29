@@ -41,12 +41,24 @@ export async function getStaticPaths() {
 const { entry, chapterSiblings } = Astro.props;
 const { Content } = await render(entry);
 
-const { usc_title, usc_section, chapter, classification, current_through } = entry.data;
+const { usc_title, usc_section, chapter, classification, current_through, generated_at } = entry.data;
 
 // Build the file path in the us-code repo for DiffViewer
 const sectionPath = `statutes/title-${usc_title}/chapter-${chapter}/section-${usc_section}.md`;
 
 const base = import.meta.env.BASE_URL;
+
+// OLRC link
+const olrcUrl = `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title${usc_title}-section${usc_section}`;
+
+// Format generated_at date
+const formattedDate = generated_at
+  ? new Date(generated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  : undefined;
+
+// Repealed / Reserved detection
+const isRepealed = entry.data.title.includes('Repealed');
+const isReserved = entry.data.title.includes('Reserved');
 ---
 
 <BaseLayout
@@ -63,20 +75,46 @@ const base = import.meta.env.BASE_URL;
   ]} />
 
   <!-- Metadata bar -->
-  <div class="not-prose mb-6 flex flex-wrap gap-3 text-xs font-sans">
-    <span class="rounded bg-navy/10 px-2 py-1 text-navy dark:bg-amber/10 dark:text-amber">
-      Title {usc_title}
-    </span>
-    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-      Chapter {chapter}
-    </span>
-    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-      {classification}
-    </span>
-    <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-      Current through {current_through}
-    </span>
+  <div class="not-prose mb-4 font-sans">
+    <p class="mb-2 text-sm font-medium text-navy dark:text-amber">{classification}</p>
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <span class="rounded bg-navy/10 px-2 py-1 text-navy dark:bg-amber/10 dark:text-amber">
+        Title {usc_title}
+      </span>
+      <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+        Chapter {chapter}
+      </span>
+      <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+        Current through {current_through}
+      </span>
+      {formattedDate && (
+        <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+          Last updated: {formattedDate}
+        </span>
+      )}
+      <a
+        href={olrcUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded bg-teal/10 px-2 py-1 text-teal hover:bg-teal/20 transition-colors"
+      >
+        View on OLRC &rarr;
+      </a>
+    </div>
   </div>
+
+  <!-- Repealed / Reserved notices -->
+  {isRepealed && (
+    <div class="not-prose my-4 rounded-lg border border-amber/30 bg-amber/5 p-4 text-sm font-sans">
+      <p class="font-medium text-amber">This section has been repealed.</p>
+      <p class="mt-1 text-slate">The repeal information is shown in the heading above.</p>
+    </div>
+  )}
+  {isReserved && (
+    <div class="not-prose my-4 rounded-lg border border-gray-300 bg-gray-50 p-4 text-sm font-sans dark:border-gray-700 dark:bg-gray-900">
+      <p class="font-medium">This section is reserved for future legislation.</p>
+    </div>
+  )}
 
   <!-- Mobile TOC fallback -->
   {chapterSiblings.length > 1 && (

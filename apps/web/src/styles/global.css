@@ -11,3 +11,38 @@
   --color-amber: #D4A843;
   --color-slate: #4A5568;
 }
+
+/* Legal text readability */
+.prose {
+  --tw-prose-body-line-height: 1.85;
+}
+
+/* Section heading § styling */
+.prose h1 {
+  font-variant-numeric: oldstyle-nums;
+}
+
+/* Nested list styling improvements */
+.prose ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose ul ul {
+  padding-left: 1.5em;
+  border-left: 2px solid var(--color-teal);
+  margin-left: 0.5em;
+}
+
+/* Legal text long paragraphs */
+.prose li > p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* Print styles */
+@media print {
+  aside, footer, nav, .not-prose { display: none !important; }
+  main { width: 100% !important; }
+  .prose { max-width: none !important; font-size: 11pt !important; }
+}
