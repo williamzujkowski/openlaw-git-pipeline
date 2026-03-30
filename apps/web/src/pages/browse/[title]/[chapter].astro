@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import { TITLE_NAMES } from '../../../data/title-names';
@@ -7,33 +7,30 @@ import { TITLE_NAMES } from '../../../data/title-names';
 export async function getStaticPaths() {
   const entries = await getCollection('statutes');
 
-  // Group by title + chapter
-  const byTitleChapter = new Map<string, { titleNum: number; chapterNum: number; entries: typeof entries }>();
+  // Group by title+chapter
+  const byTitleChapter = new Map<string, typeof entries>();
   for (const entry of entries) {
     const key = `${entry.data.usc_title}-${entry.data.chapter}`;
     if (!byTitleChapter.has(key)) {
-      byTitleChapter.set(key, {
-        titleNum: entry.data.usc_title,
-        chapterNum: entry.data.chapter,
-        entries: [],
-      });
+      byTitleChapter.set(key, []);
     }
-    byTitleChapter.get(key)!.entries.push(entry);
+    byTitleChapter.get(key)!.push(entry);
   }
 
-  return [...byTitleChapter.values()].map(({ titleNum, chapterNum, entries: chapterEntries }) => ({
-    params: {
-      title: `title-${titleNum}`,
-      chapter: `chapter-${chapterNum}`,
-    },
-    props: { titleNum, chapterNum, entries: chapterEntries },
-  }));
+  return [...byTitleChapter.entries()].map(([key, chapterEntries]) => {
+    const titleNum = chapterEntries[0]!.data.usc_title;
+    const chapterNum = chapterEntries[0]!.data.chapter;
+    return {
+      params: { title: `title-${titleNum}`, chapter: `chapter-${chapterNum}` },
+      props: { titleNum, chapterNum, entries: chapterEntries },
+    };
+  });
 }
 
 const { titleNum, chapterNum, entries } = Astro.props;
 const titleName = TITLE_NAMES[titleNum] ?? `Title ${titleNum}`;
 
-// Sort sections by section number (handle non-numeric sections like "1a")
+// Sort sections numerically
 const sortedSections = entries.sort((a, b) => {
   const aNum = parseFloat(a.data.usc_section);
   const bNum = parseFloat(b.data.usc_section);
@@ -41,12 +38,33 @@ const sortedSections = entries.sort((a, b) => {
   return a.data.usc_section.localeCompare(b.data.usc_section, undefined, { numeric: true });
 });
 
+// Render all section content at build time
+const renderedSections = await Promise.all(
+  sortedSections.map(async (entry) => {
+    const { Content } = await render(entry);
+    const status = entry.data.status ?? 'active';
+    const isInactive = status !== 'active' ||
+      entry.data.title.includes('Repealed') || entry.data.title.includes('Reserved') ||
+      entry.data.title.includes('Omitted') || entry.data.title.includes('Transferred') ||
+      entry.data.title.includes('Renumbered');
+    const statusLabel = status !== 'active' ? status.charAt(0).toUpperCase() + status.slice(1) : (
+      entry.data.title.includes('Repealed') ? 'Repealed' :
+      entry.data.title.includes('Reserved') ? 'Reserved' :
+      entry.data.title.includes('Omitted') ? 'Omitted' :
+      entry.data.title.includes('Renumbered') ? 'Renumbered' :
+      entry.data.title.includes('Transferred') ? 'Transferred' : null
+    );
+    return { entry, Content, isInactive, statusLabel };
+  })
+);
+
 const base = import.meta.env.BASE_URL;
+const activeCount = renderedSections.filter(s => !s.isInactive).length;
 ---
 
 <BaseLayout
-  title={`Title ${titleNum}, Chapter ${chapterNum}`}
-  description={`Sections in Title ${titleNum}, Chapter ${chapterNum} of the United States Code`}
+  title={`Title ${titleNum}, Chapter ${chapterNum} — ${titleName}`}
+  description={`Full text of Chapter ${chapterNum} of Title ${titleNum} of the United States Code (${sortedSections.length} sections)`}
 >
   <Breadcrumbs items={[
     { label: 'Home', href: base },
@@ -58,45 +76,76 @@ const base = import.meta.env.BASE_URL;
   <h1 class="text-navy dark:text-amber">
     Title {titleNum}, Chapter {chapterNum}
   </h1>
-  <p class="text-slate dark:text-gray-400">
-    {titleName} — {sortedSections.length} section{sortedSections.length !== 1 ? 's' : ''}
+  <p class="not-prose font-sans text-sm text-slate dark:text-gray-400">
+    {titleName} &mdash; {activeCount} active section{activeCount !== 1 ? 's' : ''}{sortedSections.length !== activeCount ? `, ${sortedSections.length - activeCount} inactive` : ''}
   </p>
 
-  <div class="not-prose mt-6">
-    <ul class="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+  <!-- Collapsible table of contents -->
+  <details class="not-prose my-4 rounded border border-gray-200 font-sans dark:border-gray-800">
+    <summary class="cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900 select-none">
+      Table of Contents ({sortedSections.length} sections)
+    </summary>
+    <ul class="max-h-64 divide-y divide-gray-100 overflow-y-auto border-t border-gray-200 dark:divide-gray-800 dark:border-gray-800">
       {sortedSections.map((entry) => {
-        const sTitle = entry.data.title;
         const status = entry.data.status ?? 'active';
-        const isRepealed = status === 'repealed' || sTitle.includes('Repealed');
-        const isReserved = status === 'reserved' || sTitle.includes('Reserved');
-        const isOmitted = status === 'omitted' || sTitle.includes('Omitted');
-        const isTransferred = status === 'transferred' || (sTitle.includes('Transferred') && !sTitle.includes('Transferred or reemployed'));
-        const isRenumbered = status === 'renumbered' || sTitle.includes('Renumbered');
-        const isInactive = isRepealed || isReserved || isOmitted || isTransferred || isRenumbered;
+        const isInactive = status !== 'active' || entry.data.title.includes('Repealed') || entry.data.title.includes('Reserved') || entry.data.title.includes('Omitted') || entry.data.title.includes('Transferred') || entry.data.title.includes('Renumbered');
         return (
           <li>
             <a
-              href={`${base}statute/${entry.id}/`}
+              href={`#section-${entry.data.usc_section}`}
               class:list={[
-                'flex items-baseline gap-3 px-4 py-3 font-sans text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-900',
-                isInactive && 'opacity-60',
+                'flex items-baseline gap-2 px-4 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-900',
+                isInactive && 'opacity-50 italic',
               ]}
             >
-              <span class="w-16 shrink-0 text-right font-mono text-xs text-slate dark:text-gray-500">
-                &sect; {entry.data.usc_section}
-              </span>
-              <span class:list={['text-navy dark:text-gray-200', isInactive && 'italic']}>
-                {sTitle}
-              </span>
-              {isRepealed && <span class="ml-auto rounded bg-amber/15 px-1.5 py-0.5 text-[10px] font-medium text-amber">Repealed</span>}
-              {isReserved && <span class="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800">Reserved</span>}
-              {isOmitted && <span class="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800">Omitted</span>}
-              {isTransferred && <span class="ml-auto rounded bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal">Transferred</span>}
-              {isRenumbered && <span class="ml-auto rounded bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal">Renumbered</span>}
+              <span class="w-12 shrink-0 text-right font-mono text-slate dark:text-gray-500">&sect; {entry.data.usc_section}</span>
+              <span class="truncate text-gray-700 dark:text-gray-300">{entry.data.title.replace(/^Section \S+ - /, '')}</span>
             </a>
           </li>
         );
       })}
     </ul>
+  </details>
+
+  <!-- Full chapter content — all sections rendered inline -->
+  <div class="mt-6 space-y-8">
+    {renderedSections.map(({ entry, Content, isInactive, statusLabel }) => (
+      <article
+        id={`section-${entry.data.usc_section}`}
+        class:list={['scroll-mt-4', isInactive && 'opacity-60']}
+      >
+        <!-- Section heading with link to detail page -->
+        <div class="not-prose mb-2 flex items-start justify-between gap-3 border-t-2 border-teal pt-3">
+          <h2 class="font-serif text-lg font-bold text-navy dark:text-amber">
+            <a href={`${base}statute/${entry.id}/`} class="hover:underline underline-offset-2">
+              &sect; {entry.data.usc_section}. {entry.data.title.replace(/^Section \S+ - /, '')}
+            </a>
+          </h2>
+          <div class="flex shrink-0 items-center gap-2">
+            {statusLabel && (
+              <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800">{statusLabel}</span>
+            )}
+            <a
+              href={`${base}statute/${entry.id}/`}
+              class="rounded bg-teal/10 px-2 py-0.5 font-sans text-[10px] font-medium text-teal transition-colors hover:bg-teal/20 dark:text-teal-bright"
+            >
+              History &amp; diffs &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Rendered statute content -->
+        <div class="prose prose-gray min-w-0 font-serif dark:prose-invert">
+          <Content />
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <!-- Back to title link -->
+  <div class="not-prose mt-8 border-t border-gray-200 pt-4 dark:border-gray-800">
+    <a href={`${base}browse/title-${titleNum}/`} class="font-sans text-sm text-teal hover:underline">
+      &larr; Back to Title {titleNum} table of contents
+    </a>
   </div>
 </BaseLayout>
