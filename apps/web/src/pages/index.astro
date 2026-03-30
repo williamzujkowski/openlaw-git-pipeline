@@ -1,5 +1,19 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Count release point tags from the content-data submodule at build time
+let releasePointCount = 0;
+try {
+  const { execSync } = await import('node:child_process');
+  const tags = execSync('git tag --list "pl-*"', {
+    cwd: new URL('../../../content-data', import.meta.url).pathname,
+    encoding: 'utf8',
+    timeout: 5000,
+  }).trim();
+  releasePointCount = tags ? tags.split('\n').length : 0;
+} catch {
+  // Submodule may not have tags in all environments
+}
 ---
 
 <BaseLayout
@@ -28,7 +42,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <p class="text-2xl font-bold text-teal">PL 119-73</p>
       <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Current through</p>
     </div>
+    {releasePointCount > 0 && (
+      <div class="rounded-lg border border-amber/30 bg-amber/5 px-5 py-3 text-center font-sans">
+        <p class="text-2xl font-bold text-amber">{releasePointCount}</p>
+        <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Historical versions</p>
+      </div>
+    )}
   </div>
+  <p class="not-prose mt-2 text-xs text-gray-400 dark:text-gray-600 font-sans">
+    Data syncs weekly from the Office of the Law Revision Counsel.
+  </p>
 
   <h2>What this project does</h2>
   <ul class="not-prose my-4 space-y-2 font-sans text-sm text-gray-700 dark:text-gray-300">
