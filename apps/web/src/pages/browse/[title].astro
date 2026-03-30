@@ -123,6 +123,11 @@ const autoExpand = sortedChapters.length <= 10;
         return s === 'active';
       }).length;
       const inactiveCount = chapterEntries.length - activeCount;
+      // Derive chapter topic from first active section's title
+      const firstActive = chapterEntries.find(e => (e.data.status ?? 'active') === 'active');
+      const chapterHint = firstActive
+        ? firstActive.data.title.replace(/^Section \S+ - /, '').split(/[;,—]/)[0]?.trim().slice(0, 50)
+        : undefined;
 
       return (
         <details
@@ -137,13 +142,18 @@ const autoExpand = sortedChapters.length <= 10;
             <span class="font-mono text-xs text-slate dark:text-gray-500 w-10 shrink-0 text-right">
               Ch. {chapterNum}
             </span>
-            <a
-              href={`${base}browse/title-${titleNum}/chapter-${chapterNum}/`}
-              class="font-medium text-navy hover:underline dark:text-gray-200"
-              onclick="event.stopPropagation()"
-            >
-              Chapter {chapterNum}
-            </a>
+            <span class="flex items-baseline gap-2 min-w-0">
+              <a
+                href={`${base}browse/title-${titleNum}/chapter-${chapterNum}/`}
+                class="shrink-0 font-medium text-navy hover:underline dark:text-gray-200"
+                onclick="event.stopPropagation()"
+              >
+                Chapter {chapterNum}
+              </a>
+              {chapterHint && (
+                <span class="truncate text-xs text-gray-400 dark:text-gray-600 hidden sm:inline">{chapterHint}</span>
+              )}
+            </span>
             <span class="ml-auto flex items-center gap-2 text-xs text-gray-400">
               {inactiveCount > 0 && (
                 <span class="text-gray-300 dark:text-gray-600">{inactiveCount} inactive</span>
@@ -184,11 +194,15 @@ const autoExpand = sortedChapters.length <= 10;
                     <span class="w-14 shrink-0 text-right font-mono text-[11px] text-slate dark:text-gray-500">
                       &sect; {entry.data.usc_section}
                     </span>
-                    <span class:list={[
-                      'truncate text-gray-700 dark:text-gray-300',
-                      isInactive && 'italic',
-                    ]}>
-                      {sTitle.replace(/^Section \S+ - /, '')}
+                    {@const displayTitle = sTitle.replace(/^Section \S+ - /, '')}
+                    <span
+                      class:list={[
+                        'truncate text-gray-700 dark:text-gray-300',
+                        isInactive && 'italic',
+                      ]}
+                      title={displayTitle}
+                    >
+                      {displayTitle}
                     </span>
                     {statusLabel ? (
                       <span class="ml-auto shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[9px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-500">
