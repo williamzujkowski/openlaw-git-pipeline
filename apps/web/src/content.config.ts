@@ -11,6 +11,7 @@ const statutes = defineCollection({
     current_through: z.string(),
     classification: z.string(),
     generated_at: z.string().optional(),
+    status: z.enum(['active', 'repealed', 'reserved', 'omitted', 'transferred', 'renumbered']).default('active'),
   }),
 });
 

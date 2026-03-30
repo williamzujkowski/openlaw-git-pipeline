@@ -2,6 +2,13 @@ import { z } from 'zod';
 import { USLM_ELEMENTS, INDENT_PER_LEVEL, MAX_NESTING_DEPTH } from './constants.js';
 import { extractTextFromNodes, findElements } from './xml-utils.js';
 
+/** Section status — derived from heading text during transformation */
+export const SectionStatusSchema = z.enum([
+  'active', 'repealed', 'reserved', 'omitted', 'transferred', 'renumbered',
+]);
+
+export type SectionStatus = z.infer<typeof SectionStatusSchema>;
+
 /** Zod schema for YAML frontmatter validation */
 export const FrontmatterSchema = z.object({
   title: z.string().min(1),
@@ -11,9 +18,20 @@ export const FrontmatterSchema = z.object({
   current_through: z.string().default('Unknown'),
   classification: z.string().min(1),
   generated_at: z.string().min(1),
+  status: SectionStatusSchema.default('active'),
 });
 
 export type Frontmatter = z.infer<typeof FrontmatterSchema>;
+
+/** Detect section status from heading text */
+export function detectSectionStatus(heading: string): SectionStatus {
+  if (heading.includes('Repealed')) return 'repealed';
+  if (heading.includes('Reserved')) return 'reserved';
+  if (heading.includes('Omitted')) return 'omitted';
+  if (heading.includes('Renumbered')) return 'renumbered';
+  if (heading.includes('Transferred') && !heading.includes('Transferred or reemployed')) return 'transferred';
+  return 'active';
+}
 
 /** A generated markdown file with its path and content */
 export interface MarkdownFile {
@@ -139,6 +157,7 @@ export function generateFrontmatter(data: Frontmatter): string {
     `current_through: "${data.current_through}"`,
     `classification: "${data.classification}"`,
     `generated_at: "${data.generated_at}"`,
+    `status: "${data.status}"`,
     '---',
     '',
   ];
@@ -282,14 +301,16 @@ export function generateMarkdownForSection(
   const uscTitle = parseInt(titleNum, 10) || 0;
   const chapterInt = parseInt(chapterNum, 10) || 0;
 
+  const sectionTitle = `Section ${sectionNum}${heading ? ' - ' + heading : ''}`;
   const frontmatter = FrontmatterSchema.parse({
-    title: `Section ${sectionNum}${heading ? ' - ' + heading : ''}`,
+    title: sectionTitle,
     usc_title: Math.max(uscTitle, 1),
     usc_section: sectionNum,
     chapter: chapterInt,
     current_through: currentThrough || 'Unknown',
     classification: `${titleNum} U.S.C. \u00A7 ${sectionNum}`,
     generated_at: now,
+    status: detectSectionStatus(sectionTitle),
   });
 
   let body = generateSectionBody(sectionChildren);
