@@ -180,6 +180,7 @@ describe('generateFrontmatter', () => {
       current_through: 'PL 119-73',
       classification: '26 U.S.C. \u00A7 101',
       generated_at: '2026-03-28T14:00:00-04:00',
+      status: 'active',
     });
     expect(fm).toContain('---');
     expect(fm).toContain('title: "Section 101 - Certain death benefits"');
@@ -188,6 +189,7 @@ describe('generateFrontmatter', () => {
     expect(fm).toContain('chapter: 1');
     expect(fm).toContain('current_through: "PL 119-73"');
     expect(fm).toContain('classification: "26 U.S.C.');
+    expect(fm).toContain('status: "active"');
   });
 });
 
