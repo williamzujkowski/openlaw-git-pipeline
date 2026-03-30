@@ -54,6 +54,8 @@
   let manifest = $state<DiffManifest | null>(null);
   let expandedCongress = $state<Set<number>>(new Set());
   let onlyShowChanges = $state(true);
+  let showAllHistory = $state(false);
+  const HISTORY_PREVIEW_COUNT = 10;
 
   /** Parse congress number from a pl-* tag name */
   function parseCongress(tagName: string): number {
@@ -495,14 +497,21 @@
       {:else if !commits.some(c => isLegislativeChange(c.message))}
         <p class="mb-3 rounded bg-amber/10 p-2 text-xs text-amber dark:bg-amber/5">No legislative changes tracked yet. Future updates will appear here as diffs.</p>
       {/if}
+      {@const visibleCommits = showAllHistory ? commits : commits.slice(0, HISTORY_PREVIEW_COUNT)}
       <ul class="max-h-48 space-y-1 overflow-y-auto">
-        {#each commits as commit (commit.sha)}
+        {#each visibleCommits as commit (commit.sha)}
           <li class="rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-300">
             <span>{formatCommitMessage(commit.message)}</span>
             <span class="ml-2 text-gray-400">{commitDisplayDate(commit.message, commit.date)}</span>
           </li>
         {/each}
       </ul>
+      {#if commits.length > HISTORY_PREVIEW_COUNT}
+        <button
+          class="mt-1 text-xs text-teal hover:underline dark:text-teal-bright"
+          onclick={() => showAllHistory = !showAllHistory}
+        >{showAllHistory ? `Show recent ${HISTORY_PREVIEW_COUNT}` : `Show all ${commits.length} changes`}</button>
+      {/if}
     {/if}
   {/if}
 </div>

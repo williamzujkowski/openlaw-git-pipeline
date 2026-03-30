@@ -70,7 +70,8 @@ const base = import.meta.env.BASE_URL;
         const isReserved = sTitle.includes('Reserved');
         const isOmitted = sTitle.includes('Omitted');
         const isTransferred = sTitle.includes('Transferred') && !sTitle.includes('Transferred or reemployed');
-        const isInactive = isRepealed || isReserved || isOmitted || isTransferred;
+        const isRenumbered = sTitle.includes('Renumbered');
+        const isInactive = isRepealed || isReserved || isOmitted || isTransferred || isRenumbered;
         return (
           <li>
             <a
@@ -90,6 +91,7 @@ const base = import.meta.env.BASE_URL;
               {isReserved && <span class="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800">Reserved</span>}
               {isOmitted && <span class="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800">Omitted</span>}
               {isTransferred && <span class="ml-auto rounded bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal">Transferred</span>}
+              {isRenumbered && <span class="ml-auto rounded bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal">Renumbered</span>}
             </a>
           </li>
         );
