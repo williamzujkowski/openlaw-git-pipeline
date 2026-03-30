@@ -62,12 +62,13 @@ const formattedDate = generated_at
   ? new Date(generated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   : undefined;
 
-// Repealed / Reserved / Omitted / Transferred / Renumbered detection
-const isRepealed = entry.data.title.includes('Repealed');
-const isReserved = entry.data.title.includes('Reserved');
-const isOmitted = entry.data.title.includes('Omitted');
-const isTransferred = entry.data.title.includes('Transferred') && !entry.data.title.includes('Transferred or reemployed');
-const isRenumbered = entry.data.title.includes('Renumbered');
+// Section status — use frontmatter field with title-based fallback for pre-status data
+const status = entry.data.status ?? 'active';
+const isRepealed = status === 'repealed' || entry.data.title.includes('Repealed');
+const isReserved = status === 'reserved' || entry.data.title.includes('Reserved');
+const isOmitted = status === 'omitted' || entry.data.title.includes('Omitted');
+const isTransferred = status === 'transferred' || (entry.data.title.includes('Transferred') && !entry.data.title.includes('Transferred or reemployed'));
+const isRenumbered = status === 'renumbered' || entry.data.title.includes('Renumbered');
 ---
 
 <BaseLayout
