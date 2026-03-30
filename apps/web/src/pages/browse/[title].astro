@@ -126,6 +126,7 @@ const autoExpand = sortedChapters.length <= 10;
 
       return (
         <details
+          id={`chapter-${chapterNum}`}
           class="group rounded border border-gray-200 dark:border-gray-800"
           open={autoExpand}
         >
@@ -207,4 +208,21 @@ const autoExpand = sortedChapters.length <= 10;
       );
     })}
   </div>
+
+  <!-- URL hash support: auto-expand chapter from #chapter-N and scroll to it -->
+  <script is:inline>
+    (function () {
+      function openFromHash() {
+        var hash = window.location.hash;
+        if (!hash || !hash.startsWith('#chapter-')) return;
+        var el = document.getElementById(hash.slice(1));
+        if (el && el.tagName === 'DETAILS') {
+          el.open = true;
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+      openFromHash();
+      window.addEventListener('hashchange', openFromHash);
+    })();
+  </script>
 </BaseLayout>
