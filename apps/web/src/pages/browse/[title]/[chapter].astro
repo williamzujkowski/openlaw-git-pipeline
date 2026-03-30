@@ -134,8 +134,8 @@ const activeCount = renderedSections.filter(s => !s.isInactive).length;
           </div>
         </div>
 
-        <!-- Rendered statute content -->
-        <div class="prose prose-gray min-w-0 font-serif dark:prose-invert">
+        <!-- Rendered statute content (hide h1 — we render our own heading above) -->
+        <div class="prose prose-gray min-w-0 font-serif dark:prose-invert [&>h1]:hidden">
           <Content />
         </div>
       </article>
