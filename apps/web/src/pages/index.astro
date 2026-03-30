@@ -1,4 +1,5 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 // Count release point tags from the content-data submodule at build time
@@ -15,8 +16,8 @@ try {
   // Submodule may not have tags in all environments
 }
 
-// Read recently changed sections from diff manifest
-interface RecentChange { title: string; section: string; path: string; from: string; to: string; }
+// Read recently changed sections from diff manifest and resolve actual URLs
+interface RecentChange { title: string; section: string; entryId: string; from: string; to: string; }
 let recentChanges: RecentChange[] = [];
 try {
   const { readFile, readdir } = await import('node:fs/promises');
@@ -24,22 +25,33 @@ try {
   const publicDir = new URL('../../public/diffs/', import.meta.url).pathname;
   const manifestRaw = await readFile(join(publicDir, 'manifest.json'), 'utf8');
   const manifest = JSON.parse(manifestRaw) as { pairs: { from: string; to: string; changedSections: number }[] };
-  // Get the most recent pair with changes
   const recentPair = manifest.pairs.filter(p => p.changedSections > 0).at(-1);
   if (recentPair) {
+    // Build a lookup from title+section to entry ID using content collection
+    const allEntries = await getCollection('statutes');
+    const entryLookup = new Map<string, string>();
+    for (const entry of allEntries) {
+      const key = `title-${entry.data.usc_title}/section-${entry.data.usc_section}`;
+      entryLookup.set(key, entry.id);
+    }
+
     const pairDir = join(publicDir, `${recentPair.from}_${recentPair.to}`);
     const titles = await readdir(pairDir).catch(() => [] as string[]);
-    for (const titleDir of titles.slice(0, 5)) {
+    for (const titleDir of titles.slice(0, 8)) {
       const sections = await readdir(join(pairDir, titleDir)).catch(() => [] as string[]);
       for (const sectionFile of sections.slice(0, 3)) {
         const section = sectionFile.replace('.json', '');
-        recentChanges.push({
-          title: titleDir,
-          section,
-          path: `statute/${titleDir}/chapter-1/${section}/`,
-          from: recentPair.from,
-          to: recentPair.to,
-        });
+        const key = `${titleDir}/${section}`;
+        const entryId = entryLookup.get(key);
+        if (entryId) {
+          recentChanges.push({
+            title: titleDir,
+            section,
+            entryId,
+            from: recentPair.from,
+            to: recentPair.to,
+          });
+        }
       }
       if (recentChanges.length >= 8) break;
     }
@@ -134,7 +146,7 @@ const base = import.meta.env.BASE_URL;
       {recentChanges.map(change => (
         <li>
           <a
-            href={`${base}statute/${change.title}/`}
+            href={`${base}statute/${change.entryId}/`}
             class="flex items-center gap-2 rounded px-2 py-1 text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
           >
             <span class="h-1.5 w-1.5 rounded-full bg-teal shrink-0" aria-hidden="true"></span>
