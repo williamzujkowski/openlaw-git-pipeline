@@ -32,7 +32,7 @@ jobs:
       - name: Fetch full submodule history (needed for diff generation)
         run: |
           cd apps/web/content-data
-          git fetch --tags --unshallow 2>/dev/null || git fetch --tags
+          git fetch --tags --force --unshallow 2>/dev/null || git fetch --tags --force
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
