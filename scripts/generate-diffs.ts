@@ -12,7 +12,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -198,6 +198,26 @@ manifest.pairs.sort((a, b) => {
   return ac !== bc ? ac - bc : al - bl;
 });
 
+// Build per-section change index: { "title-18/section-111": ["pl-117-159", ...] }
+const sectionChanges: Record<string, string[]> = {};
+for (const pair of manifest.pairs) {
+  const pairDir = join(output, `${pair.from}_${pair.to}`);
+  try {
+    const titles = await readdir(pairDir).catch(() => [] as string[]);
+    for (const titleDir of titles) {
+      const sections = await readdir(join(pairDir, titleDir)).catch(() => [] as string[]);
+      for (const sectionFile of sections) {
+        const key = `${titleDir}/${sectionFile.replace('.json', '')}`;
+        if (!sectionChanges[key]) sectionChanges[key] = [];
+        sectionChanges[key].push(pair.to);
+      }
+    }
+  } catch {
+    // Pair dir may not exist for cached entries from previous runs
+  }
+}
+
 await mkdir(output, { recursive: true });
 await writeFile(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2));
-console.log(`Done. ${computed} new pairs computed, ${skipped} skipped (already cached). Manifest: ${output}/manifest.json`);
+await writeFile(join(output, 'changed-sections.json'), JSON.stringify(sectionChanges));
+console.log(`Done. ${computed} new pairs computed, ${skipped} skipped (already cached). ${Object.keys(sectionChanges).length} sections with changes tracked. Manifest: ${output}/manifest.json`);
