@@ -16,7 +16,7 @@
 /* Legal text readability — 19px desktop, 16px mobile */
 .prose {
   font-size: 1.1875rem; /* 19px — optimal for legal text readability */
-  line-height: 1.85; /* comfortable for long legal paragraphs */
+  line-height: 1.7; /* Wikipedia research: 1.4-1.7 optimal for reading speed + comprehension */
   max-width: min(72ch, 100%);
 }
 

@@ -96,6 +96,11 @@ const isReserved = status === 'reserved' || entry.data.title.includes('Reserved'
 const isOmitted = status === 'omitted' || entry.data.title.includes('Omitted');
 const isTransferred = status === 'transferred' || (entry.data.title.includes('Transferred') && !entry.data.title.includes('Transferred or reemployed'));
 const isRenumbered = status === 'renumbered' || entry.data.title.includes('Renumbered');
+
+// Estimated reading time (200 words per minute for legal text)
+const rawBody = entry.body ?? '';
+const wordCount = rawBody.split(/\s+/).filter(Boolean).length;
+const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
 ---
 
 <BaseLayout
@@ -124,6 +129,11 @@ const isRenumbered = status === 'renumbered' || entry.data.title.includes('Renum
       <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
         Current through {current_through}
       </span>
+      {wordCount > 0 && (
+        <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+          ~{readingTimeMin} min read
+        </span>
+      )}
       {formattedDate && (
         <span class="rounded bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
           Last updated: {formattedDate}
