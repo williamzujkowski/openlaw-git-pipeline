@@ -2,7 +2,6 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiffViewer from '../../components/DiffViewer.svelte';
-import PrecedentDrawer from '../../components/PrecedentDrawer.svelte';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ArticleToc from '../../components/ArticleToc.svelte';
 
@@ -290,6 +289,41 @@ const isRenumbered = status === 'renumbered' || entry.data.title.includes('Renum
     <DiffViewer client:idle sectionPath={sectionPath} />
   </div>
 
-  <!-- Precedent drawer with case law annotations -->
-  <PrecedentDrawer client:idle sectionId={`${usc_title}-${usc_section}`} annotations={precedentCases} />
+  <!-- Case law references -->
+  {precedentCases.length > 0 && (
+    <div class="not-prose mt-8 rounded-lg border border-gray-200 p-4 font-sans dark:border-gray-800">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200">Case Law</h3>
+        <a
+          href={`https://www.courtlistener.com/?q=%22${usc_title}+U.S.C.+%C2%A7+${usc_section}%22&type=o`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rounded bg-teal/10 px-2 py-1 text-xs font-medium text-teal transition-colors hover:bg-teal/20"
+        >
+          View all on CourtListener &rarr;
+        </a>
+      </div>
+      <ul class="mt-3 space-y-2 text-sm">
+        {precedentCases.slice(0, 5).map(c => (
+          <li class="flex items-start gap-2">
+            <span class:list={[
+              'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium',
+              c.court === 'SCOTUS' ? 'bg-amber/15 text-amber' :
+              c.court === 'Appellate' ? 'bg-teal/10 text-teal' :
+              'bg-gray-100 text-gray-500 dark:bg-gray-800'
+            ]}>{c.court}</span>
+            <div>
+              <a
+                href={c.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-navy underline-offset-2 hover:underline dark:text-amber"
+              >{c.caseName}</a>
+              {c.date && <span class="ml-2 text-xs text-gray-400">({c.date.slice(0, 4)})</span>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
 </BaseLayout>
