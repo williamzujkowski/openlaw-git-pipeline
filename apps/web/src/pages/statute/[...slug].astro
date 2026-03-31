@@ -1,5 +1,5 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiffViewer from '../../components/DiffViewer.svelte';
 import PrecedentDrawer from '../../components/PrecedentDrawer.svelte';
@@ -51,6 +51,34 @@ const { usc_title, usc_section, chapter, classification, current_through, genera
 
 // Build the file path in the us-code repo for DiffViewer
 const sectionPath = `statutes/title-${usc_title}/chapter-${chapter}/section-${usc_section}.md`;
+
+// Load precedent annotations if available
+const annotationId = `title-${usc_title}/section-${usc_section}`;
+let precedentCases: Array<{
+  caseName: string;
+  citation: string;
+  court: 'SCOTUS' | 'Appellate' | 'District';
+  date: string;
+  holdingSummary: string;
+  sourceUrl: string;
+  impact: 'interpretation' | 'unconstitutional' | 'narrowed' | 'historical';
+}> = [];
+try {
+  const annotation = await getEntry('annotations', annotationId);
+  if (annotation) {
+    precedentCases = annotation.data.cases.map(c => ({
+      caseName: c.caseName,
+      citation: c.citation ?? '',
+      court: (c.court === 'SCOTUS' || c.court === 'Appellate' ? c.court : 'District') as 'SCOTUS' | 'Appellate' | 'District',
+      date: c.date,
+      holdingSummary: c.holdingSummary ?? '',
+      sourceUrl: c.sourceUrl ?? '',
+      impact: (c.impact === 'unconstitutional' || c.impact === 'narrowed' || c.impact === 'historical' ? c.impact : 'interpretation') as 'interpretation',
+    }));
+  }
+} catch {
+  // No annotation file for this section
+}
 
 const base = import.meta.env.BASE_URL;
 
@@ -262,6 +290,6 @@ const isRenumbered = status === 'renumbered' || entry.data.title.includes('Renum
     <DiffViewer client:idle sectionPath={sectionPath} />
   </div>
 
-  <!-- Precedent drawer (empty annotations for now) -->
-  <PrecedentDrawer client:idle sectionId={`${usc_title}-${usc_section}`} annotations={[]} />
+  <!-- Precedent drawer with case law annotations -->
+  <PrecedentDrawer client:idle sectionId={`${usc_title}-${usc_section}`} annotations={precedentCases} />
 </BaseLayout>

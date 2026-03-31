@@ -15,4 +15,22 @@ const statutes = defineCollection({
   }),
 });
 
-export const collections = { statutes };
+const annotations = defineCollection({
+  loader: glob({ pattern: '**/*.yaml', base: './content-data/annotations' }),
+  schema: z.object({
+    targetSection: z.string(),
+    lastSyncedET: z.string(),
+    totalCases: z.number().optional(),
+    cases: z.array(z.object({
+      caseName: z.string(),
+      citation: z.string().optional(),
+      court: z.string(),
+      date: z.string(),
+      holdingSummary: z.string().optional(),
+      sourceUrl: z.string().optional(),
+      impact: z.string().optional(),
+    })).default([]),
+  }),
+});
+
+export const collections = { statutes, annotations };
