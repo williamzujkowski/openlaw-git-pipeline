@@ -154,6 +154,22 @@
   }
 }
 
+/* Focus mode — hide sidebar, center content for distraction-free reading */
+.focus-mode aside {
+  display: none !important;
+}
+
+.focus-mode main {
+  max-width: 72ch;
+  margin: 0 auto;
+}
+
+@media (min-width: 1280px) {
+  .focus-mode main {
+    max-width: 80ch;
+  }
+}
+
 /* Print styles — page breaks, clean layout */
 @media print {
   aside, footer, nav, .not-prose { display: none !important; }
