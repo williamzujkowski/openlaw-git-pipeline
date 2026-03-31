@@ -164,6 +164,10 @@
   margin: 0 auto;
 }
 
+.focus-mode #focus-exit {
+  display: inline-flex !important;
+}
+
 @media (min-width: 1280px) {
   .focus-mode main {
     max-width: 80ch;

@@ -207,24 +207,41 @@ const titleEntries = Object.entries(TITLE_NAMES)
           }
         });
         // Focus mode toggle
-        var focusBtn = document.getElementById('focus-toggle');
-        if (focusBtn) {
-          var label = focusBtn.querySelector('.focus-label');
-          function updateFocusLabel() {
-            var active = document.documentElement.classList.contains('focus-mode');
+        function toggleFocusMode() {
+          document.documentElement.classList.toggle('focus-mode');
+          var active = document.documentElement.classList.contains('focus-mode');
+          localStorage.setItem('focus-mode', String(active));
+          var focusBtn = document.getElementById('focus-toggle');
+          if (focusBtn) {
+            var label = focusBtn.querySelector('.focus-label');
             if (label) label.textContent = active ? 'Exit' : 'Focus';
             focusBtn.setAttribute('aria-label', active ? 'Exit focus mode' : 'Enter focus mode');
           }
-          updateFocusLabel();
-          focusBtn.addEventListener('click', function () {
-            document.documentElement.classList.toggle('focus-mode');
-            var active = document.documentElement.classList.contains('focus-mode');
-            localStorage.setItem('focus-mode', String(active));
-            updateFocusLabel();
-          });
+        }
+        var focusBtn = document.getElementById('focus-toggle');
+        if (focusBtn) {
+          var label = focusBtn.querySelector('.focus-label');
+          var active = document.documentElement.classList.contains('focus-mode');
+          if (label) label.textContent = active ? 'Exit' : 'Focus';
+          focusBtn.addEventListener('click', toggleFocusMode);
+        }
+        var focusExit = document.getElementById('focus-exit');
+        if (focusExit) {
+          focusExit.addEventListener('click', toggleFocusMode);
         }
       })();
     </script>
+    <!-- Floating exit button for focus mode (visible only when sidebar is hidden) -->
+    <button
+      id="focus-exit"
+      class="fixed top-4 left-4 z-50 hidden items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 font-sans text-xs text-gray-700 shadow-md hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+      aria-label="Exit focus mode"
+    >
+      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+      Exit Focus
+    </button>
     <BackToTop client:load />
   </body>
 </html>
