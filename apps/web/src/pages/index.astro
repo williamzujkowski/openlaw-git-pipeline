@@ -17,7 +17,7 @@ try {
 }
 
 // Read recently changed sections from diff manifest and resolve actual URLs
-interface RecentChange { title: string; section: string; entryId: string; from: string; to: string; }
+interface RecentChange { title: string; section: string; entryId: string; sectionName: string; from: string; to: string; }
 let recentChanges: RecentChange[] = [];
 try {
   const { readFile, readdir } = await import('node:fs/promises');
@@ -29,10 +29,10 @@ try {
   if (recentPair) {
     // Build a lookup from title+section to entry ID using content collection
     const allEntries = await getCollection('statutes');
-    const entryLookup = new Map<string, string>();
+    const entryLookup = new Map<string, { id: string; name: string }>();
     for (const entry of allEntries) {
       const key = `title-${entry.data.usc_title}/section-${entry.data.usc_section}`;
-      entryLookup.set(key, entry.id);
+      entryLookup.set(key, { id: entry.id, name: entry.data.title.replace(/^Section \S+ - /, '') });
     }
 
     const pairDir = join(publicDir, `${recentPair.from}_${recentPair.to}`);
@@ -42,12 +42,13 @@ try {
       for (const sectionFile of sections.slice(0, 3)) {
         const section = sectionFile.replace('.json', '');
         const key = `${titleDir}/${section}`;
-        const entryId = entryLookup.get(key);
-        if (entryId) {
+        const found = entryLookup.get(key);
+        if (found) {
           recentChanges.push({
             title: titleDir,
             section,
-            entryId,
+            entryId: found.id,
+            sectionName: found.name,
             from: recentPair.from,
             to: recentPair.to,
           });
@@ -58,6 +59,17 @@ try {
   }
 } catch {
   // Diffs may not exist yet
+}
+
+// Compute stats from content collection (reuses already-loaded data when available)
+let sectionCount = 59954; // fallback
+let titleCount = 54; // fallback
+try {
+  const stats = await getCollection('statutes');
+  sectionCount = stats.length;
+  titleCount = new Set(stats.map(e => e.data.usc_title)).size;
+} catch {
+  // Use fallback values
 }
 
 const base = import.meta.env.BASE_URL;
@@ -78,11 +90,11 @@ const base = import.meta.env.BASE_URL;
   <!-- Quick stats -->
   <div class="not-prose my-6 flex flex-wrap gap-4">
     <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
-      <p class="text-2xl font-bold text-teal">54</p>
+      <p class="text-2xl font-bold text-teal">{titleCount}</p>
       <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Titles</p>
     </div>
     <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
-      <p class="text-2xl font-bold text-teal">59,954</p>
+      <p class="text-2xl font-bold text-teal">{sectionCount.toLocaleString()}</p>
       <p class="mt-0.5 text-xs text-slate dark:text-gray-400">Sections</p>
     </div>
     <div class="rounded-lg border border-teal/30 bg-teal/5 px-5 py-3 text-center font-sans">
@@ -150,8 +162,9 @@ const base = import.meta.env.BASE_URL;
             class="flex items-center gap-2 rounded px-2 py-1 text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
           >
             <span class="h-1.5 w-1.5 rounded-full bg-teal shrink-0" aria-hidden="true"></span>
-            <span class="font-mono text-xs text-slate dark:text-gray-500">{change.title.replace('title-', 'Title ')}</span>
-            <span>{change.section.replace('section-', '§ ')}</span>
+            <span class="font-mono text-xs text-slate dark:text-gray-500 shrink-0">{change.title.replace('title-', 'Title ')}</span>
+            <span class="shrink-0">{change.section.replace('section-', '§ ')}</span>
+            <span class="truncate text-xs text-gray-400 dark:text-gray-500">{change.sectionName}</span>
           </a>
         </li>
       ))}
