@@ -13,9 +13,9 @@
   --color-slate: #4A5568;
 }
 
-/* Legal text readability — 18px base for comfortable reading */
+/* Legal text readability — 19px desktop, 16px mobile */
 .prose {
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.1875rem; /* 19px — optimal for legal text readability */
   line-height: 1.85; /* comfortable for long legal paragraphs */
   max-width: min(72ch, 100%);
 }
@@ -120,10 +120,37 @@
   border-color: var(--color-gray-700, #334155);
 }
 
-/* Mobile prose — tighter width on smaller screens */
+/* Mobile prose — tighter width, smaller font, more spacing for thumb-scrolling */
 @media (max-width: 768px) {
   .prose {
+    font-size: 1rem; /* 16px on mobile */
     max-width: min(90vw, 65ch);
+  }
+  .prose p {
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+  }
+}
+
+/* Sticky section headers on chapter pages — shows which section user is reading */
+.sticky-section-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-white, #fff);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-teal);
+}
+
+:where(.dark, .dark *) .sticky-section-header {
+  background: var(--color-gray-950, #030712);
+}
+
+/* Mobile breadcrumb: hide middle items, show only first + last */
+@media (max-width: 640px) {
+  .breadcrumb-middle {
+    display: none;
   }
 }
 

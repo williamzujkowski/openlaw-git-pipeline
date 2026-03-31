@@ -114,8 +114,8 @@ const activeCount = renderedSections.filter(s => !s.isInactive).length;
         id={`section-${entry.data.usc_section}`}
         class:list={['scroll-mt-4', isInactive && 'opacity-60']}
       >
-        <!-- Section heading with link to detail page -->
-        <div class="not-prose mb-2 flex items-start justify-between gap-3 border-t-2 border-teal pt-3">
+        <!-- Section heading with link to detail page (sticky for scroll context) -->
+        <div class="sticky-section-header not-prose mb-2 flex items-start justify-between gap-3">
           <h2 class="font-serif text-lg font-bold text-navy dark:text-amber">
             <a href={`${base}statute/${entry.id}/`} class="hover:underline underline-offset-2">
               &sect; {entry.data.usc_section}. {entry.data.title.replace(/^Section \S+ - /, '')}
