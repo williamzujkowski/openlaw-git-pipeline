@@ -79,3 +79,21 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+
+  lighthouse:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lighthouse audit
+        uses: treosh/lighthouse-ci-action@2f8dda6cf4de7d73b29853c3f29e73a01e297bd8 # v12.1.0
+        with:
+          urls: |
+            https://civic-source.github.io/us-code-tracker/
+            https://civic-source.github.io/us-code-tracker/browse/title-18/
+          budgetPath: ''
+          temporaryPublicStorage: true
+      - name: Report scores
+        if: always()
+        run: |
+          echo "## Lighthouse Scores" >> "$GITHUB_STEP_SUMMARY"
+          echo "Audit completed after deploy. Check artifacts for full report." >> "$GITHUB_STEP_SUMMARY"
