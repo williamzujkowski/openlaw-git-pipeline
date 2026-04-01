@@ -6,11 +6,20 @@
 @theme {
   --font-serif: "Georgia", "Times New Roman", serif;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --color-navy: #1B3A5C;
-  --color-teal: #0D7377;
-  --color-teal-bright: #14a3a8;
-  --color-amber: #D4A843;
-  --color-slate: #4A5568;
+  /* USWDS-influenced civic palette */
+  --color-navy: #1A4480;
+  --color-navy-dark: #112F4E;
+  --color-navy-light: #D9E8F6;
+  --color-teal: #0F6E56;
+  --color-teal-bright: #70E8B1;
+  --color-amber: #C2850C;
+  --color-amber-light: #FEF0C8;
+  --color-crimson: #B50909;
+  --color-crimson-light: #FDE0DB;
+  --color-slate: #3D4551;
+  /* Warm neutrals — evokes legal publishing */
+  --color-warm-white: #FAFAF8;
+  --color-warm-gray: #F0EDE8;
 }
 
 /* Legal text readability — 19px desktop, 16px mobile */
@@ -159,4 +168,13 @@
   .prose li, .prose p { break-inside: avoid; }
   .prose ul { break-inside: auto; }
   a[href]::after { content: none !important; }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

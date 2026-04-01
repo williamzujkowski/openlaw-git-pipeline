@@ -287,16 +287,20 @@ const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
     </aside>
   </div>
 
-  <!-- Prev / Next section navigation -->
-  <nav class="not-prose mt-8 flex items-center justify-between border-t border-gray-200 pt-4 font-sans text-sm dark:border-gray-800" aria-label="Section navigation">
+  <!-- Prev / Next section navigation with title previews -->
+  <nav class="not-prose mt-8 flex items-center justify-between border-t border-gray-200 pt-4 font-sans dark:border-gray-800" aria-label="Section navigation">
     {prevSection ? (
-      <a href={`${base}statute/${prevSection.id}/`} class="flex items-center gap-1 text-teal hover:underline">
-        <span aria-hidden="true">&larr;</span> &sect; {prevSection.data.usc_section}
+      <a href={`${base}statute/${prevSection.id}/`} class="flex flex-col gap-0.5 rounded-lg px-3 py-2 transition-colors hover:bg-warm-gray dark:hover:bg-gray-800 max-w-[45%]">
+        <span class="text-[11px] text-gray-400">&larr; Previous</span>
+        <span class="text-sm font-medium text-teal">&sect; {prevSection.data.usc_section}</span>
+        <span class="truncate text-xs text-gray-500">{prevSection.data.title.replace(/^Section \S+ - /, '')}</span>
       </a>
     ) : <span></span>}
     {nextSection ? (
-      <a href={`${base}statute/${nextSection.id}/`} class="flex items-center gap-1 text-teal hover:underline">
-        &sect; {nextSection.data.usc_section} <span aria-hidden="true">&rarr;</span>
+      <a href={`${base}statute/${nextSection.id}/`} class="flex flex-col items-end gap-0.5 rounded-lg px-3 py-2 transition-colors hover:bg-warm-gray dark:hover:bg-gray-800 max-w-[45%] ml-auto text-right">
+        <span class="text-[11px] text-gray-400">Next &rarr;</span>
+        <span class="text-sm font-medium text-teal">&sect; {nextSection.data.usc_section}</span>
+        <span class="truncate text-xs text-gray-500">{nextSection.data.title.replace(/^Section \S+ - /, '')}</span>
       </a>
     ) : <span></span>}
   </nav>

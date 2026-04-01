@@ -20,7 +20,7 @@ const { items } = Astro.props;
       return (
         <li class:list={['flex items-center gap-1', isMiddle && 'breadcrumb-middle']}>
           {index > 0 && (
-            <span class:list={['text-gray-400 dark:text-gray-600', isMiddle && 'breadcrumb-middle']} aria-hidden="true">&gt;</span>
+            <span class:list={['text-gray-400 dark:text-gray-600', isMiddle && 'breadcrumb-middle']} aria-hidden="true">›</span>
           )}
           {isLast || !item.href ? (
             <span class="text-gray-900 dark:text-gray-100" aria-current={isLast ? "page" : undefined}>
