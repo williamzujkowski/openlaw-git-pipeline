@@ -164,14 +164,15 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--color-white, #fff);
+  background: var(--color-warm-white, #FAFAF8);
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--color-teal);
 }
 
 :where(.dark, .dark *) .sticky-section-header {
-  background: var(--color-gray-950, #030712);
+  background: var(--color-navy-dark, #112F4E);
+  border-bottom-color: var(--color-teal-bright);
 }
 
 /* Anchor link scroll clearance for sticky headers */
