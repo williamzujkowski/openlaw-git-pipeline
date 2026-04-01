@@ -176,6 +176,28 @@ main, article, section {
     scroll-margin-top: 2rem;
   }
 
+  /* Heading size reduction for mobile readability */
+  h1 {
+    font-size: 1.375rem !important;
+    line-height: 1.25;
+  }
+  h2 {
+    font-size: 1.0625rem !important;
+    line-height: 1.3;
+  }
+
+  /* Truncate prev/next section titles on mobile */
+  nav[aria-label="Section navigation"] .truncate {
+    max-width: 120px;
+  }
+
+  /* TOC scrollable on mobile for large chapters */
+  details ul, details ol {
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Make sticky section headers non-sticky on mobile to save space */
   .sticky-section-header {
     position: relative;
