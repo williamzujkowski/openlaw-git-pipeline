@@ -38,6 +38,7 @@ const titleEntries = Object.entries(TITLE_NAMES)
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <meta name="base-url" content={base} />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="alternate" type="application/rss+xml" title="US Code Tracker — Recent Updates" href={`${base}feed.xml`} />
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title === 'US Code Tracker' ? title : `${title} | US Code Tracker`} />

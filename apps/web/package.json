@@ -12,8 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@civic-source/types": "workspace:*",
+    "@astrojs/rss": "^4.0.18",
     "@astrojs/svelte": "^8.0.4",
+    "@civic-source/types": "workspace:*",
     "@octokit/rest": "^22.0.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.2",
