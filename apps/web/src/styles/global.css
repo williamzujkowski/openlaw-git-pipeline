@@ -135,27 +135,56 @@
   word-break: break-word;
 }
 
-/* Mobile prose — tighter width, reduced nesting */
+/* Prevent horizontal overflow globally */
+html, body {
+  overflow-x: hidden;
+}
+
+main, article, section {
+  min-width: 0;
+}
+
+/* Mobile — comprehensive fixes */
 @media (max-width: 768px) {
   .prose {
-    max-width: min(92vw, 65ch);
+    max-width: min(95vw, 65ch);
   }
 
-  /* Reduce nested list indentation on narrow screens */
+  /* Reduce nested list indentation aggressively */
   .prose ul ul {
-    padding-left: 1rem;
+    padding-left: 0.75rem;
+    margin-left: 0;
   }
   .prose ul ul ul {
-    padding-left: 0.75rem;
-  }
-  .prose ul ul ul ul {
     padding-left: 0.5rem;
   }
+  .prose ul ul ul ul {
+    padding-left: 0.375rem;
+  }
 
-  /* Anchor link clearance for sticky header on mobile */
+  /* Title browse — section lists in expanded chapters */
+  #title-toc ul {
+    padding-left: 0;
+  }
+  #title-toc li a {
+    padding-left: 0.75rem;
+  }
+
+  /* Anchor link clearance */
   [id^="section-"],
   [id^="subsec-"] {
-    scroll-margin-top: 5rem;
+    scroll-margin-top: 2rem;
+  }
+
+  /* Make sticky section headers non-sticky on mobile to save space */
+  .sticky-section-header {
+    position: relative;
+  }
+
+  /* Ensure images/embeds scale */
+  img, video, iframe {
+    max-width: 100%;
+    height: auto;
   }
 }
 
