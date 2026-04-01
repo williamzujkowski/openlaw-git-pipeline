@@ -490,7 +490,10 @@
     <!-- Change history -->
     <h3 class="mb-2 text-base font-semibold text-gray-800 dark:text-gray-200">Change History</h3>
     {#if commits.length === 0}
-      <p class="text-gray-500">No history yet for this section.</p>
+      <div class="rounded-lg bg-warm-gray p-4 text-center text-[13px] leading-relaxed text-gray-500 dark:bg-gray-800/50 dark:text-gray-400">
+        <p>No amendments tracked yet for this section.</p>
+        <p class="mt-1 text-[11px]">Change history will appear here automatically when the pipeline detects modifications between US Code release points.</p>
+      </div>
     {:else}
       {#if tags.length === 0}
         <p class="mb-3 rounded bg-teal/10 p-2 text-xs text-teal-700 dark:text-teal-300">Version timeline available when release point tags are published.</p>

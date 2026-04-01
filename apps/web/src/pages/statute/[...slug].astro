@@ -105,8 +105,23 @@ const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
 
 <BaseLayout
   title={entry.data.title}
-  description={`${classification} - current through ${current_through}`}
+  description={`Full text of ${classification} with change history. Current through ${current_through}.`}
 >
+  <!-- Schema.org Legislation structured data -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Legislation",
+    "name": classification,
+    "headline": entry.data.title.replace(/^Section \S+ - /, ''),
+    "legislationIdentifier": classification,
+    "legislationJurisdiction": "US",
+    "legislationLegalForce": status === 'repealed' ? 'NotInForce' : 'InForce',
+    "isPartOf": { "@type": "Legislation", "name": "United States Code", "legislationIdentifier": "USC" },
+    "url": `https://civic-source.github.io${base}statute/${entry.id}/`,
+    "dateModified": generated_at?.split('T')[0] ?? "2026-03-30",
+    "publisher": { "@type": "Organization", "name": "Office of the Law Revision Counsel", "url": "https://uscode.house.gov/" }
+  })} />
+
   <!-- Breadcrumbs -->
   <Breadcrumbs items={[
     { label: 'Home', href: base },
@@ -154,6 +169,14 @@ const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
         aria-label="Print this section"
       >
         Print
+      </button>
+      <button
+        class="rounded bg-gray-100 px-2 py-1 text-gray-600 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        aria-label="Copy citation to clipboard"
+        data-citation={classification}
+        onclick="navigator.clipboard.writeText(this.dataset.citation).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy cite',2000)}).catch(()=>{})"
+      >
+        Copy cite
       </button>
     </div>
   </div>
@@ -382,4 +405,29 @@ const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
       });
     })();
   </script>
+
+  <!-- Keyboard shortcuts: j/k navigate sections -->
+  <script is:inline>
+    document.addEventListener('keydown', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      var nav = document.querySelector('nav[aria-label="Section navigation"]');
+      if (!nav) return;
+      var links = nav.querySelectorAll('a');
+      if (e.key === 'k' || (e.key === 'ArrowLeft' && !e.metaKey)) {
+        if (links[0]) window.location.href = links[0].href;
+      } else if (e.key === 'j' || (e.key === 'ArrowRight' && !e.metaKey)) {
+        if (links[1]) window.location.href = links[1].href;
+        else if (links[0] && links.length === 1) window.location.href = links[0].href;
+      }
+    });
+  </script>
+
+  <!-- Keyboard hints (desktop only) -->
+  <div class="not-prose mt-4 text-center text-[11px] text-gray-300 dark:text-gray-700 hidden lg:block" aria-hidden="true">
+    <kbd class="rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] dark:border-gray-700 dark:bg-gray-800">j</kbd>
+    <kbd class="rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] dark:border-gray-700 dark:bg-gray-800">k</kbd>
+    navigate sections
+    <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] dark:border-gray-700 dark:bg-gray-800">/</kbd>
+    search
+  </div>
 </BaseLayout>

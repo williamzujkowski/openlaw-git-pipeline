@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+const base = import.meta.env.BASE_URL;
+---
+
+<BaseLayout title="Page not found">
+  <div class="not-prose mx-auto max-w-md py-16 text-center font-sans">
+    <h1 class="mb-3 text-2xl font-medium text-navy dark:text-amber">Section not found</h1>
+    <p class="mb-6 text-gray-500 leading-relaxed">
+      The section you're looking for may have been renumbered, repealed,
+      or the URL may be incorrect.
+    </p>
+    <a
+      href={`${base}browse/`}
+      class="inline-block rounded-lg bg-navy px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-dark dark:bg-teal dark:hover:bg-teal/80"
+    >
+      Browse all titles &rarr;
+    </a>
+    <p class="mt-8 text-sm text-gray-400">Or use the search bar above to find what you need.</p>
+  </div>
+</BaseLayout>
