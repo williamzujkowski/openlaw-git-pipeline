@@ -70,8 +70,8 @@ const titleEntries = Object.entries(TITLE_NAMES)
       Skip to content
     </a>
     <div class="flex h-full flex-col lg:flex-row">
-      <!-- Sidebar -->
-      <aside class="w-full border-b border-gray-200 bg-warm-gray font-sans lg:w-64 lg:flex-shrink-0 lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-[#0B1926] lg:flex lg:flex-col lg:h-full">
+      <!-- Sidebar — nav column -->
+      <aside class="w-full border-b border-gray-200 bg-warm-gray font-sans lg:w-64 lg:flex-shrink-0 lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-[#0B1926] lg:flex lg:flex-col lg:h-full 2xl:w-60">
         <div class="flex items-center justify-between p-4 lg:flex-col lg:items-start lg:gap-4">
           <a href={base} class="text-lg font-bold text-navy dark:text-amber">
             US Code Tracker
@@ -118,9 +118,9 @@ const titleEntries = Object.entries(TITLE_NAMES)
         </nav>
       </aside>
 
-      <!-- Main content -->
-      <main id="main-content" class="min-h-0 flex-1 overflow-y-auto">
-        <article class="prose prose-lg prose-gray mx-auto max-w-3xl p-6 font-serif leading-relaxed dark:prose-invert lg:p-10">
+      <!-- Main content — becomes flex at 2xl for 3-column precedent panel -->
+      <main id="main-content" class="min-h-0 flex-1 overflow-y-auto 2xl:flex 2xl:flex-row">
+        <article class="prose prose-lg prose-gray mx-auto max-w-3xl p-6 font-serif leading-relaxed dark:prose-invert lg:p-10 2xl:mx-0 2xl:flex-1 2xl:min-w-0">
           <slot />
         </article>
 

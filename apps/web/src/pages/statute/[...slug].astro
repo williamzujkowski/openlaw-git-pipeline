@@ -2,6 +2,7 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiffViewer from '../../components/DiffViewer.svelte';
+import PrecedentDrawer from '../../components/PrecedentDrawer.svelte';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ArticleToc from '../../components/ArticleToc.svelte';
 
@@ -490,4 +491,7 @@ const readingTimeMin = Math.max(1, Math.round(wordCount / 200));
     <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] dark:border-gray-700 dark:bg-gray-800">/</kbd>
     search
   </div>
+
+  <!-- Precedent drawer: persistent 3rd column at 2xl, overlay below -->
+  <PrecedentDrawer client:idle sectionId={usc_section} annotations={precedentCases} />
 </BaseLayout>
