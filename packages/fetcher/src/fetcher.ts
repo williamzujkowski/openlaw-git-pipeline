@@ -3,6 +3,7 @@ import { type IUsCodeFetcher, type ReleasePoint, type Result, ok, err } from '@c
 import { type Logger, createLogger, fetchWithRetry as sharedFetchWithRetry } from '@civic-source/shared';
 import { OLRC_DOWNLOAD_PAGE, OLRC_PRIOR_RELEASE_POINTS_PAGE } from './constants.js';
 import { HashStore } from './hash-store.js';
+import { FetcherMetrics } from './metrics.js';
 
 /** Compute SHA-256 hex digest of a buffer */
 export function sha256(data: Buffer): string {
@@ -158,10 +159,12 @@ export function parseReleasePoints(html: string): ReleasePoint[] {
 export class OlrcFetcher implements IUsCodeFetcher {
   private readonly logger: Logger;
   private readonly hashStore: HashStore;
+  readonly metrics: FetcherMetrics;
 
-  constructor(options?: { logger?: Logger; hashStore?: HashStore }) {
+  constructor(options?: { logger?: Logger; hashStore?: HashStore; metrics?: FetcherMetrics }) {
     this.logger = options?.logger ?? createLogger('OlrcFetcher');
     this.hashStore = options?.hashStore ?? new HashStore();
+    this.metrics = options?.metrics ?? new FetcherMetrics();
   }
 
   /** List available release points from the current download page, optionally filtered by title */
@@ -177,6 +180,7 @@ export class OlrcFetcher implements IUsCodeFetcher {
 
     const html = await result.value.text();
     let points = parseReleasePoints(html);
+    this.metrics.recordDiscovered(points.length);
 
     if (title !== undefined) {
       points = points.filter((p) => p.title === title);
@@ -205,6 +209,7 @@ export class OlrcFetcher implements IUsCodeFetcher {
 
     const priorHtml = await priorResult.value.text();
     const historicalPoints = parsePriorReleasePoints(priorHtml);
+    this.metrics.recordDiscovered(historicalPoints.length);
 
     // Also fetch current release point to include it
     const currentResult = await fetchWithRetry(OLRC_DOWNLOAD_PAGE, this.logger);
@@ -239,9 +244,13 @@ export class OlrcFetcher implements IUsCodeFetcher {
   async fetchXml(releasePoint: ReleasePoint): Promise<Result<string>> {
     this.logger.info('Fetching XML', { title: releasePoint.title, url: releasePoint.uslmUrl });
     const timer = this.logger.startTimer('fetchXml');
+    const startMs = performance.now();
 
     const result = await fetchWithRetry(releasePoint.uslmUrl, this.logger);
     if (!result.ok) {
+      const durationMs = performance.now() - startMs;
+      this.metrics.recordDuration(durationMs);
+      this.metrics.recordError('network');
       timer();
       return result;
     }
@@ -254,17 +263,26 @@ export class OlrcFetcher implements IUsCodeFetcher {
     const changed = await this.hashStore.hasChanged(hashKey, hash);
     if (!changed) {
       this.logger.info('Content unchanged, skipping', { title: releasePoint.title, hash });
+      const durationMs = performance.now() - startMs;
+      this.metrics.recordDuration(durationMs);
+      this.metrics.recordSkipped();
       timer();
       return ok('');
     }
 
     // Validate that we got something that looks like a ZIP (PK signature)
     if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
+      const durationMs = performance.now() - startMs;
+      this.metrics.recordDuration(durationMs);
+      this.metrics.recordError('non-zip');
       timer();
       return err(new Error('Downloaded content is not a valid ZIP file'));
     }
 
     await this.hashStore.setHash(hashKey, hash);
+    const durationMs = performance.now() - startMs;
+    this.metrics.recordDuration(durationMs);
+    this.metrics.recordDownloaded();
     timer();
 
     // Return raw buffer as base64 — caller will extract XML from the ZIP
