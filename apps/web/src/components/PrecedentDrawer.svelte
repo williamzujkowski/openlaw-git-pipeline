@@ -7,7 +7,6 @@
   }
 
   const COURT_ORDER: CaseAnnotation['court'][] = ['SCOTUS', 'Appellate', 'District'];
-  // Use custom theme colors (--color-amber, --color-teal, --color-slate) for consistency
   const COURT_COLORS: Record<CaseAnnotation['court'], string> = {
     SCOTUS: 'text-amber dark:text-amber',
     Appellate: 'text-teal dark:text-teal-bright',
@@ -43,10 +42,16 @@
 </script>
 
 {#if annotations.length > 0}
-  <!-- Toggle button -->
+  <!--
+    Persistent 3-column panel at 2xl (≥1440px):
+    Shows as a static sidebar column, no toggle needed.
+    Below 2xl: reverts to fixed overlay drawer behavior.
+  -->
+
+  <!-- Toggle button — hidden at 2xl (persistent panel replaces it) -->
   <button
     onclick={() => (open = !open)}
-    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md bg-teal px-2 py-3 text-xs font-semibold text-white shadow-lg hover:opacity-90 transition-opacity"
+    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md bg-teal px-2 py-3 text-xs font-semibold text-white shadow-lg hover:opacity-90 transition-opacity 2xl:hidden"
     aria-label={open ? 'Close precedent drawer' : 'Open precedent drawer'}
     aria-expanded={open}
     aria-controls="precedent-drawer-panel"
@@ -54,11 +59,11 @@
     {open ? '›' : '‹'} Cases ({annotations.length})
   </button>
 
-  <!-- Drawer panel -->
+  <!-- Overlay drawer — below 2xl only -->
   {#if open}
     <aside
       id="precedent-drawer-panel"
-      class="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto border-l border-gray-200 bg-white p-5 shadow-xl sm:w-[400px] dark:border-gray-700 dark:bg-gray-950"
+      class="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto border-l border-gray-200 bg-white p-5 shadow-xl sm:w-[400px] dark:border-gray-700 dark:bg-gray-950 2xl:hidden"
       aria-label="Precedent annotations"
     >
       <div class="mb-4 flex items-center justify-between">
@@ -81,7 +86,7 @@
           {court} ({cases.length})
         </h3>
         <ul class="space-y-3">
-          {#each cases as c, i}
+          {#each cases as c}
             {@const globalIdx = annotations.indexOf(c)}
             <li class="rounded border border-gray-100 p-3 dark:border-gray-700">
               <a
@@ -113,4 +118,55 @@
       {/each}
     </aside>
   {/if}
+
+  <!-- Persistent panel — visible at 2xl (≥1440px) as third column -->
+  <aside
+    class="hidden 2xl:block 2xl:w-80 2xl:shrink-0 2xl:overflow-y-auto 2xl:border-l 2xl:border-gray-200 2xl:bg-warm-white 2xl:p-5 dark:2xl:border-gray-800 dark:2xl:bg-[#0B1926]"
+    aria-label="Precedent annotations"
+  >
+    <div class="sticky top-0 bg-warm-white pb-2 dark:bg-[#0B1926]">
+      <h2 class="text-base font-bold text-navy dark:text-amber">
+        Precedent <code class="text-xs font-mono text-slate dark:text-gray-400">§{sectionId}</code>
+      </h2>
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        {annotations.length} annotation{annotations.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+
+    {#each [...grouped()] as [court, cases]}
+      <h3 class="mt-4 mb-2 text-xs font-bold uppercase tracking-wide {COURT_COLORS[court]}">
+        {court} ({cases.length})
+      </h3>
+      <ul class="space-y-3">
+        {#each cases as c}
+          {@const globalIdx = annotations.indexOf(c)}
+          <li class="rounded border border-gray-100 p-3 dark:border-gray-700">
+            <a
+              href={c.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-teal underline-offset-2 hover:underline dark:text-teal-bright"
+            >{c.caseName}</a>
+            <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span>{c.citation} · {c.court} · {c.date}</span>
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium {IMPACT_COLORS[c.impact]}">
+                {c.impact}
+              </span>
+            </div>
+            <p class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
+              class:line-clamp-2={!expandedHoldings.has(globalIdx)}
+            >
+              {c.holdingSummary}
+            </p>
+            {#if c.holdingSummary.length > 120}
+              <button
+                onclick={() => toggleHolding(globalIdx)}
+                class="mt-1 text-xs text-teal hover:underline dark:text-teal-bright"
+              >{expandedHoldings.has(globalIdx) ? 'show less' : 'show more'}</button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/each}
+  </aside>
 {/if}
