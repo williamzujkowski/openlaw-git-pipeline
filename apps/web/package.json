@@ -19,7 +19,7 @@
     "@octokit/rest": "^22.0.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "4.1.18",
-    "astro": "^6.1.2",
+    "astro": "^6.1.6",
     "pagefind": "^1.4.0",
     "svelte": "^5.55.0",
     "tailwindcss": "4.1.18"
