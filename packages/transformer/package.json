@@ -20,12 +20,12 @@
   "dependencies": {
     "@civic-source/shared": "workspace:*",
     "@civic-source/types": "workspace:*",
-    "fast-xml-parser": "^5.8.0",
+    "fast-xml-parser": "^5.9.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
     "typescript": "^6.0.0",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.9"
   }
 }
