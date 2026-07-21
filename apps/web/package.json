@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.0",
-    "@astrojs/rss": "^4.0.18",
+    "@astrojs/rss": "^4.0.19",
     "@astrojs/svelte": "^9.0.0",
     "@civic-source/types": "workspace:*",
     "@fontsource/public-sans": "^5.2.7",
