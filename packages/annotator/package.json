@@ -20,11 +20,11 @@
   "dependencies": {
     "@civic-source/shared": "workspace:*",
     "@civic-source/types": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
     "typescript": "^6.0.0",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.11"
   }
 }
