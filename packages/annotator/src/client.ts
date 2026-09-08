@@ -5,7 +5,93 @@ import {
   SEARCH_ENDPOINT,
   COURTLISTENER_RATE_LIMITER,
   DEFAULT_PAGE_SIZE,
+  MAX_API_RESPONSE_BYTES,
 } from './constants.js';
+
+/**
+ * Read a response body as JSON without letting an unbounded body reach memory
+ * (#223 item 3).
+ *
+ * Two layers, because either alone is insufficient:
+ *
+ *  1. `Content-Length`, when present and over the cap, rejects before a single
+ *     byte of body is read. This is the cheap path and handles the honest case.
+ *  2. A streaming read that aborts the moment the running total exceeds the cap.
+ *     Necessary because Content-Length is absent on a chunked response and is
+ *     attacker-controlled on a redirected one — a server that lies about it
+ *     would walk straight past layer 1. Buffering via `arrayBuffer()` and then
+ *     checking the length would defeat the purpose: the OOM happens during the
+ *     read, not after it.
+ *
+ * Mirrors the fetcher's `exceedsContentLengthLimit` + `readBytesCapped` pair.
+ * The logic is duplicated rather than shared because `@civic-source/annotator`
+ * does not depend on `@civic-source/fetcher`; hoisting both into
+ * `@civic-source/shared` would be the DRY fix and is left as a follow-up rather
+ * than bundled into a security change.
+ */
+export async function readJsonCapped(response: Response): Promise<Result<unknown>> {
+  // Optional-chained because this must not assume more of the object than it
+  // needs: a real Response always carries `headers` and `body`, but test doubles
+  // and polyfilled fetches routinely supply only `.json()`. Throwing on those
+  // would turn a size guard into an availability bug, and the retry loop would
+  // swallow the TypeError as a transient failure.
+  const declared = Number(response.headers?.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_API_RESPONSE_BYTES) {
+    return err(
+      new Error(
+        `Response body declares ${String(declared)} bytes, over the ${String(MAX_API_RESPONSE_BYTES)}-byte cap`
+      )
+    );
+  }
+
+  const body = response.body;
+  if (body === null || body === undefined) {
+    // No readable stream to bound — an empty body, or a Response-like without
+    // one. Nothing can grow during the read, so defer to the object's own
+    // parse; the cap has no work to do here.
+    try {
+      return ok((await response.json()) as unknown);
+    } catch (error: unknown) {
+      return err(
+        new Error(
+          `Malformed JSON response: ${error instanceof Error ? error.message : String(error)}`
+        )
+      );
+    }
+  }
+
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value === undefined) continue;
+      total += value.byteLength;
+      if (total > MAX_API_RESPONSE_BYTES) {
+        await reader.cancel();
+        return err(
+          new Error(`Response body exceeded the ${String(MAX_API_RESPONSE_BYTES)}-byte cap`)
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return parseJsonResult(Buffer.concat(chunks).toString('utf-8'));
+}
+
+/** Parse JSON into a Result rather than throwing past the retry loop. */
+function parseJsonResult(text: string): Result<unknown> {
+  try {
+    return ok(JSON.parse(text) as unknown);
+  } catch (error: unknown) {
+    return err(new Error(`Malformed JSON response: ${error instanceof Error ? error.message : String(error)}`));
+  }
+}
 
 /** Raw result shape from the CourtListener search API */
 export interface CourtListenerResult {
@@ -114,8 +200,9 @@ export class CourtListenerClient {
         });
 
         if (response.ok) {
-          const data: unknown = await response.json();
-          return ok(data);
+          const parsed = await readJsonCapped(response);
+          if (!parsed.ok) return parsed;
+          return ok(parsed.value);
         }
 
         if (response.status === 401) {

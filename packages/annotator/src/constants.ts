@@ -50,6 +50,19 @@ export const COURT_PRIORITY: Record<string, number> = {
 };
 
 /**
+ * Hard cap on a CourtListener API response body, in bytes (#223 item 3).
+ *
+ * These are JSON search results — a page of opinions is tens of kilobytes.
+ * 8 MiB is far above any legitimate response and far below what would
+ * threaten the importer, whose failure mode without a cap is an OOM on the
+ * runner rather than a handled error.
+ *
+ * Deliberately NOT the fetcher's MAX_DOWNLOAD_BYTES (300 MiB): that bounds
+ * bulk XML downloads, and reusing it here would be a cap in name only.
+ */
+export const MAX_API_RESPONSE_BYTES = 8 * 1024 * 1024;
+
+/**
  * Validate that the COURTLISTENER_API_TOKEN environment variable is set.
  * Returns the token string or throws a descriptive error.
  */

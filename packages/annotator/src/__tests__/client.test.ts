@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createLogger } from '@civic-source/shared';
 
-import { CourtListenerClient, isCourtListenerResult } from '../client.js';
-import { COURTLISTENER_RATE_LIMITER, RATE_LIMIT_PER_HOUR } from '../constants.js';
+import { CourtListenerClient, isCourtListenerResult, readJsonCapped } from '../client.js';
+import { COURTLISTENER_RATE_LIMITER, RATE_LIMIT_PER_HOUR, MAX_API_RESPONSE_BYTES } from '../constants.js';
 
 describe('COURTLISTENER_RATE_LIMITER (#230)', () => {
   it('sustains exactly RATE_LIMIT_PER_HOUR tokens per hour (not the old ~7200)', () => {
@@ -83,5 +83,57 @@ describe('CourtListenerClient.searchByStatute (#237)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value).toEqual([]);
+  });
+});
+
+describe('readJsonCapped — response size cap (#223 item 3)', () => {
+  const CAP = MAX_API_RESPONSE_BYTES;
+
+  /** A Response whose body streams `chunks`, with an optional content-length. */
+  function streaming(chunks: Uint8Array[], contentLength?: string): Response {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const c of chunks) controller.enqueue(c);
+        controller.close();
+      },
+    });
+    const headers = new Headers(contentLength === undefined ? {} : { 'content-length': contentLength });
+    return new Response(stream, { headers });
+  }
+
+  it('parses a normal body', async () => {
+    // The benign population: an ordinary search page must still work.
+    const body = new TextEncoder().encode(JSON.stringify({ results: [VALID] }));
+    const result = await readJsonCapped(streaming([body], String(body.byteLength)));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value).toEqual({ results: [VALID] });
+  });
+
+  it('rejects up-front when Content-Length declares more than the cap', async () => {
+    const result = await readJsonCapped(streaming([new Uint8Array(8)], String(CAP + 1)));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toMatch(/declares .* over the .*-byte cap/);
+  });
+
+  it('rejects a body that exceeds the cap while streaming, despite an honest-looking Content-Length', async () => {
+    // THE case the Content-Length check alone cannot catch: the header is
+    // absent or lying, so the only defence is aborting mid-read. Buffering
+    // first and checking after would already have spent the memory.
+    const chunk = new Uint8Array(1024 * 1024); // 1 MiB
+    const chunks = Array.from({ length: 9 }, () => chunk); // 9 MiB > 8 MiB cap
+    const result = await readJsonCapped(streaming(chunks, '32'));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toMatch(/exceeded the .*-byte cap/);
+  });
+
+  it('returns an error Result for malformed JSON rather than throwing', async () => {
+    const body = new TextEncoder().encode('{ not json');
+    const result = await readJsonCapped(streaming([body]));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toMatch(/Malformed JSON/);
   });
 });
