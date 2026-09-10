@@ -31,6 +31,6 @@
     "@astrojs/check": "^0.9.9",
     "@types/sanitize-html": "^2.16.1",
     "typescript": "^6.0.0",
-    "vitest": "^4.1.6"
+    "vitest": "^5.0.0"
   }
 }
